@@ -218,7 +218,7 @@ button{font:inherit;color:inherit}
 #title{pointer-events:auto;background:rgba(255,255,255,.92);border-radius:14px;padding:9px 12px 9px 14px;display:flex;align-items:center;gap:12px;
   box-shadow:0 6px 20px rgba(60,60,110,.10);max-width:min(520px,70%)}
 #title .fno{font-size:26px;color:var(--indigo);line-height:1}
-#title .tx{min-width:0}
+#title .tx{min-width:0}#period{display:block;font-size:10px;color:var(--sub);white-space:nowrap}
 #title .tx b{display:block;font-size:15px;font-weight:700}
 #title .tx span{display:block;font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sessBtn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:6px 10px;font-size:12px;cursor:pointer;white-space:nowrap;flex:none}
@@ -341,7 +341,7 @@ body.priv :is(.fl:not(.rf):not(.lobby) b,#tname,#mproj,#msess,.al b,.al p,.bub,.
     <canvas id="cv"></canvas>
     <div id="ov"></div>
     <div id="head">
-      <div id="title"><span class="fno jua" id="tfl">-</span><div class="tx"><b id="tname">연결 중</b><span id="tsub">세션 기록을 읽고 있어요</span></div><button id="sessBtn" aria-haspopup="true" aria-expanded="false">세션 ▾</button></div>
+      <div id="title"><span class="fno jua" id="tfl">-</span><div class="tx"><b id="tname">연결 중</b><small id="period" title="마지막 활동 기준 최근 7일 · 원본 기록 보존">최근 7일</small><span id="tsub">세션 기록을 읽고 있어요</span></div><button id="sessBtn" aria-haspopup="true" aria-expanded="false">세션 ▾</button></div>
       <div id="usage" title=""></div>
       <div id="live"><i></i><span>LIVE</span></div>
     </div>
@@ -1000,7 +1000,7 @@ function onEv(e) {
     const s = allSessions().find(x => x.key === e.session);
     if (s) {
       const who = staff(s.agent === 'codex' ? 'codex' : 'claude', s.floor.proj);
-      floorAlert.set(s.floor.proj, kind); alertInfo.set(s.floor.proj, { who, status: e.status, text: kind === 'ask' ? (e.detail || e.text) : e.text, at: Date.now() }); renderDir();
+      floorAlert.set(s.floor.proj, kind); alertInfo.set(s.floor.proj, { session: e.session, who, status: e.status, text: kind === 'ask' ? (e.detail || e.text) : e.text, at: Date.now() }); renderDir();
       notify(kind === 'ask' ? `🙋 ${fno(s.floor.n)} ${who} ${e.status === 'waiting_approval' ? '승인 대기' : '질문 있어요'}` : `⚠ ${fno(s.floor.n)} ${who} 에러`);
     }
   }
@@ -1129,7 +1129,7 @@ function logLine(W, e) {
     default: return;
   }
   const box = $('#alog'); if (!scene.logs++) box.innerHTML = '';
-  const d = document.createElement('div'); d.className = 'al';
+  const d = document.createElement('div'); d.className = 'al'; d.dataset.session = e.session || W.key;
   d.innerHTML = `<i style="background:${PEOPLE[kind].dot}"></i><div class="h"><b>${esc(who)}</b><time>${new Date(e.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}</time></div><p>${esc(txt)}</p>`;
   box.prepend(d); while (box.children.length > 60) box.lastChild.remove();
 }
@@ -1150,6 +1150,11 @@ const rootOf = (k) => { const seen = new Set(); while (layout.merge[k] && !seen.
 let RAW = null, ALL = [], hiddenN = 0;
 const homeOf = new Map(); // 세션 → 원래(합치기까지 반영한) 층
 function applySnap() { // 정리 규칙대로 층을 다시 묶고, 숨긴 층을 빼고, 층 번호를 다시 매김
+  const visibleKeys = new Set(RAW.floors.flatMap(f => f.sessions.map(s => s.key)));
+  for (const [proj, info] of alertInfo) if (info.session && !visibleKeys.has(info.session)) { alertInfo.delete(proj); floorAlert.delete(proj); }
+  const log = $('#alog');
+  for (const item of log.querySelectorAll('[data-session]')) if (!visibleKeys.has(item.dataset.session)) item.remove();
+  if (scene) scene.logs = log.querySelectorAll('.al').length;
   const orig = new Map(RAW.floors.map(f => [f.proj, f.name])), G = new Map();
   const g = (k) => G.get(k) || G.set(k, { proj: k, orig: orig.get(k) || '', parts: [], total: 0, sessions: [] }).get(k);
   homeOf.clear();
@@ -1219,7 +1224,7 @@ function renderDir() {
   const empty = !SNAP.floors.length;
   if (empty && ALL.length) { $('#empty').style.display = 'flex'; $('#empty').innerHTML = '층을 모두 숨겼어요.<br>왼쪽 아래 「숨긴 층 되돌리기」로 다시 꺼낼 수 있어요.'; return; }
   $('#empty').style.display = empty ? 'flex' : 'none';
-  if (empty) $('#empty').innerHTML = `아직 빌딩이 비어 있어요.<br>터미널에서 claude를 한 번 실행하면 1층이 생겨요.<br><small>${esc(SNAP.root)}</small>`;
+  if (empty) $('#empty').innerHTML = `최근 7일 동안 활동한 세션이 없습니다.<br>Claude Code나 Codex에서 작업하면 표시됩니다.<br><small>원본 기록은 그대로 보관됩니다.</small>`;
 }
 function renderPop() {
   const f = SNAP.floors.find(x => x.n === curFloorN); if (!f) return;
@@ -1506,7 +1511,7 @@ function syncRecordedState() {
 function onSnap() {
   syncRecordedState();
   const all = allSessions(), now = Date.now();
-  if (!all.length) { clearScene(); scene = null; $('#crew').innerHTML = '<div class="cr">기록이 아직 없습니다. Claude Code 또는 Codex에서 작업하면 자동으로 표시됩니다.</div>'; renderDir(); return; }
+  if (!all.length) { clearScene(); scene = null; closePop(); floorAlert.clear(); alertInfo.clear(); $('#crew').innerHTML = `<div class="cr">${ALL.length ? '층을 모두 숨겼습니다. 숨긴 층을 되돌리면 다시 표시됩니다.' : '최근 7일 동안 활동한 세션이 없습니다. 원본 기록은 그대로 보관됩니다.'}</div>`; $('#alog').innerHTML = '<div class="none">표시할 세션이 없습니다.</div>'; renderDir(); return; }
   const cur = all.find(s => s.key === curKey);
   let target = curKey;
   if (follow) {
@@ -2115,7 +2120,7 @@ const live = $('#live');
 function connect() {
   const es = new EventSource('/events');
   es.addEventListener('snap', (m) => { RAW = JSON.parse(m.data); applySnap(); renderUsage(RAW.usageStatus);
-    if (RAW.building && RAW.building !== TITLE) { TITLE = RAW.building; if (!alertT) document.title = TITLE; $('#bname').textContent = TITLE; } live.classList.add('ok'); live.querySelector('span').textContent = 'LIVE'; onSnap(); live.title = `기록 읽기 전용 · ${RAW.diagnostics?.files || 0}개 파일 · 건너뛴 줄 ${RAW.diagnostics?.malformedLines || 0}개`;
+    if (RAW.building && RAW.building !== TITLE) { TITLE = RAW.building; if (!alertT) document.title = TITLE; $('#bname').textContent = TITLE; } live.classList.add('ok'); live.querySelector('span').textContent = 'LIVE'; onSnap(); live.title = `최근 7일 표시 · 기간 제외 ${RAW.retention?.hiddenSessions || 0}개 세션 · 원본 기록 보존 · ${RAW.diagnostics?.files || 0}개 파일 · 건너뛴 줄 ${RAW.diagnostics?.malformedLines || 0}개`;
     if (RAW.setup && RAW.setup.need && !setupShown) { setupShown = true; openSetup(true); } });
   es.addEventListener('ev', (m) => onEv(JSON.parse(m.data)));
   es.onerror = () => { live.classList.remove('ok'); live.querySelector('span').textContent = '연결 끊김'; };
