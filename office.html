@@ -248,6 +248,7 @@ body.priv :is(.fl:not(.rf):not(.lobby) b,#tname,#mproj,#msess,.al b,.al p,.bub,.
 #usage .bar{width:42px;height:6px;border-radius:3px;background:#e6e8f3;overflow:hidden}
 #usage .bar i{display:block;height:100%;border-radius:3px}
 #usage .na{grid-column:2/4;color:var(--faint)}
+#usage .old{color:var(--faint)}
 #usage:not(:empty)+#live{margin-left:0}
 #live{margin-left:auto;pointer-events:auto;display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--sub);background:rgba(255,255,255,.92);border-radius:999px;padding:6px 11px}
 #live i{width:7px;height:7px;border-radius:50%;background:#c3c6d6}
@@ -1568,17 +1569,35 @@ function frame(now) {
 }
 
 // ───────── 사용량 (Claude · Codex 5시간 / 주간 한도) ─────────
-function renderUsage(u) {
-  const windowCell = (w, fallback) => {
-    if (!w) return `<span class="w">${fallback} 기록 없음</span>`;
-    const minutes = w.window_minutes;
-    const label = minutes ? (minutes % 1440 === 0 ? `${minutes / 1440}일` : minutes % 60 === 0 ? `${minutes / 60}시간` : `${minutes}분`) : fallback;
-    const expired = w.resets_at && w.resets_at * 1000 < Date.now();
-    return `<span class="w" title="마지막 기록 값 · 실시간 조회 아님">${label} ${Math.round(w.used)}%${expired ? ' (갱신 대기)' : ''}</span>`;
+// 작업 기록 연결 여부와 사용 한도 제공 여부는 별개다. 기록에 없는 한도는 추정하거나 0%로 채우지 않는다.
+function renderUsage(status) {
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const time = ms => new Date(ms).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const ago = ms => { const m = Math.max(0, Math.round((Date.now() - ms) / 60000)); return m < 60 ? `${m}분 전` : m < 1440 ? `${Math.round(m / 60)}시간 전` : `${Math.round(m / 1440)}일 전`; };
+  const span = m => !m ? '' : m % 1440 === 0 ? (m === 10080 ? '주간' : `${m / 1440}일`) : m % 60 === 0 ? `${m / 60}시간` : `${m}분`;
+  const records = { connected: '기록 연결됨', missing: '기록 폴더 없음', disabled: '모니터링 꺼짐' };
+  const row = (agent, name) => {
+    const x = status?.[agent], who = `<span class="who ${agent === 'claude' ? 'cl' : 'cx'}">${name}</span>`;
+    if (!x) return who + '<span class="na">상태 확인 중</span>';
+    const rec = records[x.records] || '';
+    if (x.limits === 'unsupported') return who + `<span class="na">${rec} · 한도는 ${esc(x.manual)}에서 확인</span>`;
+    if (x.limits !== 'recorded') return who + `<span class="na">${rec}${x.records === 'connected' ? ' · 한도 기록 아직 없음' : ''}</span>`;
+    const cells = x.windows.slice(0, 2).map((w, i) => {
+      const label = span(w.windowMinutes) || `한도 ${i + 1}`;
+      if (w.state === 'reset') return `<span class="w old" title="기록된 초기화 시각(${time(w.resetsAt)})이 지났습니다. 새 값은 다음 기록 때 표시됩니다.">${label} 초기화됨</span>`;
+      return `<span class="w${x.stale ? ' old' : ''}" title="마지막 기록 값 · 실시간 조회 아님${w.resetsAt ? ` · 초기화 ${time(w.resetsAt)}` : ''}">${label} ${Math.round(w.used)}%${x.stale ? '*' : ''}</span>`;
+    });
+    while (cells.length < 2) cells.push('<span class="w"></span>');
+    return who + cells.join('');
   };
-  const row = (agent, name) => { const x = u && u[agent]; return `<span class="who ${agent === 'claude' ? 'cl' : 'cx'}">${name}</span>` + (x ? windowCell(x.primary, '한도 1') + windowCell(x.secondary, '한도 2') : '<span class="na">사용 한도 기록 없음</span>'); };
   $('#usage').innerHTML = row('claude', '✳ Claude') + row('codex', '◇ Codex');
-  $('#usage').title = ['claude','codex'].map(agent => { const x = u && u[agent]; return x ? `${agent}: 기록 시각 ${new Date(x.at).toLocaleString('ko-KR')}${x.stale ? ' · 오래된 기록' : ''}` : `${agent}: 기록에서만 확인 · 상태줄/훅 설치 없음`; }).join('\n');
+  $('#usage').title = ['claude', 'codex'].map(agent => {
+    const x = status?.[agent]; if (!x) return '';
+    const head = `${agent === 'claude' ? 'Claude' : 'Codex'}: ${records[x.records] || ''}`;
+    if (x.limits === 'unsupported') return `${head} · ${x.note}`;
+    if (x.limits !== 'recorded') return `${head} · 기록에 남은 한도 값이 없습니다. ${x.manual ? `${x.manual}로 직접 확인하세요.` : ''}`;
+    return `${head} · 마지막 한도 기록 ${time(x.observedAt)} (${ago(x.observedAt)})${x.stale ? ' · 오래된 기록(*)' : ''} · 실시간 조회 아님`;
+  }).filter(Boolean).join('\n');
 }
 
 // ───────── 날씨 ─────────
@@ -2095,7 +2114,7 @@ requestAnimationFrame(frame);
 const live = $('#live');
 function connect() {
   const es = new EventSource('/events');
-  es.addEventListener('snap', (m) => { RAW = JSON.parse(m.data); applySnap(); renderUsage(RAW.usage);
+  es.addEventListener('snap', (m) => { RAW = JSON.parse(m.data); applySnap(); renderUsage(RAW.usageStatus);
     if (RAW.building && RAW.building !== TITLE) { TITLE = RAW.building; if (!alertT) document.title = TITLE; $('#bname').textContent = TITLE; } live.classList.add('ok'); live.querySelector('span').textContent = 'LIVE'; onSnap(); live.title = `기록 읽기 전용 · ${RAW.diagnostics?.files || 0}개 파일 · 건너뛴 줄 ${RAW.diagnostics?.malformedLines || 0}개`;
     if (RAW.setup && RAW.setup.need && !setupShown) { setupShown = true; openSetup(true); } });
   es.addEventListener('ev', (m) => onEv(JSON.parse(m.data)));
