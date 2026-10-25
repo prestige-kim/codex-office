@@ -4,25 +4,27 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
-const { Monitor } = require('./lib/monitor');
+const { CombinedMonitor } = require('./lib/combined');
 function start(options = {}) {
   const codexHome = process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
   const root = path.resolve(options.root || process.env.CODEX_SESSIONS_DIR || path.join(codexHome, 'sessions'));
+  const claudeHome = process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
+  const claudeRoot = path.resolve(options.claudeRoot || process.env.CLAUDE_PROJECTS_DIR || path.join(claudeHome, 'projects'));
   const dataDir = path.resolve(options.dataDir || process.env.OFFICE_DATA_DIR || path.join(__dirname, 'data'));
   // Configuration writes must stay outside the Codex home and transcript tree.
   const inside = (a, b) => { const rel = path.relative(a, b); return !rel || (!rel.startsWith('..' + path.sep) && rel !== '..' && !path.isAbsolute(rel)); };
   const real = p => { if (fs.existsSync(p)) return fs.realpathSync(p); const parent = path.dirname(p); return parent === p ? p : path.join(real(parent), path.basename(p)); };
-  if (inside(real(codexHome), real(dataDir)) || inside(real(root), real(dataDir))) throw new Error('OFFICE_DATA_DIR must be outside the Codex home and sessions directory');
+  if ([codexHome, root, claudeHome, claudeRoot].some(p => inside(real(p), real(dataDir)))) throw new Error('OFFICE_DATA_DIR must be outside the Codex/Claude homes and transcript directories');
   const confFile = path.join(dataDir, 'office.json'), clients = new Set();
   let config = { building: '코덱스 오피스', user: '나' };
   try { config = { ...config, ...JSON.parse(fs.readFileSync(confFile, 'utf8')) }; } catch {}
   const broadcast = (event, value) => { const msg = `event: ${event}\ndata: ${JSON.stringify(value)}\n\n`; for (const client of clients) if (client.writableLength < 1024 * 1024) client.write(msg); else client.destroy(); };
-  const monitor = new Monitor(root, { onEvent: (S, e) => {
+  const monitor = new CombinedMonitor({ codexRoot: root, claudeRoot, codexEnabled: options.codexEnabled ?? !process.env.NO_CODEX, claudeEnabled: options.claudeEnabled ?? !process.env.NO_CLAUDE, onEvent: (S, e) => {
     if (S.parent) return; // Child animation is synchronized from the authoritative snapshot.
-    if (e.k !== 'childLink') broadcast('ev', { session: `codex/${S.id}`, ...e });
+    if (e.k !== 'childLink') broadcast('ev', { session: `${S.provider}/${S.id}`, ...e });
   } });
-  const snapshot = () => ({ ...monitor.snapshot(), root, codex: root, self: __dirname.replace(/\\/g, '/'), ...config,
-    setup: { need: false, hasCodex: fs.existsSync(root) } });
+  const snapshot = () => ({ ...monitor.snapshot(), root: claudeRoot, codex: root, self: __dirname.replace(/\\/g, '/'), ...config,
+    setup: { need: false, hasCodex: fs.existsSync(root), hasClaude: fs.existsSync(claudeRoot) } });
   const server = http.createServer((req, res) => {
     const host = req.headers.host || '';
     if (!/^(?:localhost|127\.0\.0\.1):\d+$/.test(host)) { res.writeHead(403); return res.end('Localhost only'); }
@@ -65,7 +67,7 @@ function start(options = {}) {
   const timers = [setInterval(() => { monitor.poll(); send(); }, 250), setInterval(() => { monitor.discover(); send(); }, 2000), setInterval(() => { for (const c of clients) c.write(': ping\n\n'); }, 15000)];
   server.on('close', () => timers.forEach(clearInterval));
   server.listen(options.port ?? Number(process.env.PORT || 4777), '127.0.0.1', () => {
-    console.log(`🏢 코덱스 오피스 http://localhost:${server.address().port}\n기록 읽기 전용: ${root}\n추가 모델 호출 없음 · 종료: Ctrl+C`);
+    console.log(`🏢 코덱스 오피스 · Claude + Codex http://localhost:${server.address().port}\nCodex 기록 읽기 전용: ${root}\nClaude 기록 읽기 전용: ${claudeRoot}\n추가 모델 호출 없음 · 종료: Ctrl+C`);
     options.onReady?.(server);
   });
   return { server, monitor, snapshot, close: () => { clients.forEach(c => c.end()); server.close(); } };

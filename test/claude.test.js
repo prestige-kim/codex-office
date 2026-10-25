@@ -1,0 +1,62 @@
+'use strict';
+const test = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), path = require('node:path'), os = require('node:os'), crypto = require('node:crypto');
+const { createState, reduce } = require('../lib/claude');
+const { publicState } = require('../lib/codex');
+const { CombinedMonitor } = require('../lib/combined');
+let seq = 0;
+const rec = (type, content, extra = {}) => ({ type, sessionId: 's', cwd: '/app', uuid: `u${++seq}`, timestamp: new Date().toISOString(), message: { role: type, content }, ...extra });
+const use = (name, input = {}, id = `tool${++seq}`) => ({ type: 'tool_use', name, input, id });
+const result = (id, is_error = false) => rec('user', [{ type: 'tool_result', tool_use_id: id, content: 'result', is_error }]);
+test('Claude end_turn is completed, tool_use is running, thinking is generic and raw API blobs ignored', () => {
+  const S = createState('s'); reduce(S, rec('user', '화면 구현'));
+  reduce(S, rec('assistant', [{ type: 'thinking', thinking: 'do not display hidden content' }]));
+  assert.equal(S.status, 'thinking'); assert.equal(S.bubble.text, '생각 중…');
+  reduce(S, rec('assistant', [use('Read', { file_path: '/app/a.js' }, 'read')], { message: { content: [use('Read', { file_path: '/app/a.js' }, 'read')], stop_reason: 'tool_use' } }));
+  assert.equal(S.room, 'library'); assert.equal(S.status, 'running');
+  reduce(S, result('read'));
+  reduce(S, rec('assistant', [], { message: { content: [{ type: 'text', text: '완료했습니다' }], stop_reason: 'end_turn' } }));
+  assert.equal(S.status, 'completed'); assert.equal(S.waiting, 0);
+  assert.deepEqual(reduce(S, rec('api-request-blob', 'private context')), []); assert.equal(S.status, 'completed');
+});
+test('Claude question results are responses, not new user instructions; turn duration cannot end a pending question', () => {
+  const S = createState('s'); reduce(S, rec('user', '기능 구현'));
+  reduce(S, rec('assistant', [use('AskUserQuestion', { questions: [{ question: '색상?' }] }, 'q')])); assert.equal(S.status, 'waiting_user');
+  reduce(S, { type: 'system', subtype: 'turn_duration', timestamp: new Date().toISOString() }); assert.equal(S.status, 'waiting_user');
+  reduce(S, result('q')); assert.equal(S.status, 'running'); assert.equal(S.firstPrompt, '기능 구현'); assert.equal(S.room, 'desk'); assert.equal(S.tool, '');
+  assert.equal([...S.daily.values()][0].prompts.length, 1);
+  reduce(S, rec('user', '[Request interrupted by user for tool use]')); assert.equal(S.status, 'interrupted');
+});
+test('Claude errors recover, metadata and duplicates do not inflate tools, permission modes do not imply approval waits', () => {
+  const S = createState('s'); const action = rec('assistant', [use('Edit', { file_path: '/app/x.js' }, 'e')]);
+  reduce(S, action); reduce(S, action); assert.equal(S.tools, 1); assert.equal(S.room, 'dev');
+  reduce(S, result('e', true)); assert.equal(S.status, 'error');
+  reduce(S, { type: 'permission-mode', permissionMode: 'default' }); assert.equal(S.status, 'error');
+  reduce(S, rec('assistant', [use('Bash', { command: 'npm test' }, 'b')])); assert.equal(S.status, 'running'); assert.equal(S.room, 'server');
+  assert.equal(publicState(S, S.mtime + 100000).status, 'stale');
+  reduce(S, { type: 'system', subtype: 'permission_request' }); assert.equal(S.status, 'waiting_approval');
+});
+test('Claude plans and synchronous/background agents follow explicit records', () => {
+  const S = createState('s');
+  reduce(S, rec('assistant', [use('TodoWrite', { todos: [{ content: '검증', status: 'in_progress' }] }, 'p')])); assert.equal(S.board[0].t, '검증');
+  reduce(S, rec('assistant', [use('Agent', { description: '코드 검색', subagent_type: 'Explore' }, 'a')])); assert.equal(S.agents.a.type, 'Explore');
+  reduce(S, result('a')); assert.equal(S.agents.a, undefined);
+  reduce(S, rec('assistant', [use('Agent', { description: '백그라운드' }, 'bg')]));
+  reduce(S, { ...result('bg'), toolUseResult: { isAsync: true, agentId: 'task-1' } }); assert.ok(S.agents.bg);
+  reduce(S, rec('user', '<task-notification><task-id>different</task-id></task-notification>')); assert.ok(S.agents.bg);
+  reduce(S, rec('user', '<task-notification><task-id>task-1</task-id></task-notification>')); assert.equal(S.agents.bg, undefined);
+});
+test('combined monitoring merges exact cwd, namespaces equal IDs, links Claude subagents and preserves both sources', t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'dual-office-')); t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const codexRoot = path.join(dir, 'codex'), claudeRoot = path.join(dir, 'claude', 'projects'); fs.mkdirSync(codexRoot); fs.mkdirSync(path.join(claudeRoot, 'encoded', 's', 'subagents'), { recursive: true });
+  const write = (f, values) => fs.writeFileSync(f, values.map(JSON.stringify).join('\n') + '\n');
+  const cx = path.join(codexRoot, 'cx.jsonl'), cl = path.join(claudeRoot, 'encoded', 's.jsonl'), sub = path.join(claudeRoot, 'encoded', 's', 'subagents', 'agent-1.jsonl');
+  write(cx, [{ type: 'session_meta', payload: { id: 's', cwd: '/app/' } }, { type: 'event_msg', timestamp: new Date().toISOString(), payload: { type: 'task_started', turn_id: 't' } }]);
+  write(cl, [rec('user', 'Claude 작업'), rec('assistant', [use('Read', { file_path: '/app/x' }, 'r')])]);
+  write(sub, [rec('user', '하위 작업', { isSidechain: true }), rec('assistant', [use('Grep', { pattern: 'name' }, 'g')], { isSidechain: true })]);
+  const digest = () => crypto.createHash('sha256').update(fs.readFileSync(cx)).update(fs.readFileSync(cl)).update(fs.readFileSync(sub)).digest('hex'); const hash = digest();
+  const m = new CombinedMonitor({ codexRoot, claudeRoot }); m.discover(); m.poll(); const snap = m.snapshot();
+  assert.equal(snap.floors.length, 1); assert.equal(snap.floors[0].sessions.length, 2); assert.equal(new Set(snap.floors[0].sessions.map(s => s.key)).size, 2);
+  assert.equal(snap.floors[0].sessions.find(s => s.agent === 'claude').state.agents.length, 1); assert.equal(digest(), hash);
+  assert.equal(snap.usage.claude, null); assert.equal(snap.diagnostics.sources.claude.files, 2);
+  const only = new CombinedMonitor({ codexRoot, claudeRoot, claudeEnabled: false }); only.discover(); assert.equal(only.snapshot().floors[0].sessions.length, 1);
+});

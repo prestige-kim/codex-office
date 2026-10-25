@@ -353,7 +353,7 @@ body.priv :is(.fl:not(.rf):not(.lobby) b,#tname,#mproj,#msess,.al b,.al p,.bub,.
 
   <aside id="right">
     <div id="jhead"><h2 class="jua">업무 일지</h2><dl><dt>폴더</dt><dd id="mproj">-</dd><dt>세션</dt><dd id="msess">-</dd></dl></div>
-    <div id="alog"><div class="none">아직 기록이 없어요. 이 세션에서 Codex가 움직이면 여기에 쌓여요.</div></div>
+    <div id="alog"><div class="none">아직 기록이 없어요. 이 세션에서 Claude나 Codex가 움직이면 여기에 쌓여요.</div></div>
   </aside>
 </div>
 
@@ -367,7 +367,7 @@ const TW = 56, TH = 28, WALL = 84, LOW = 22, ISLE = 1.6, SOIL = 52;
 const WORLD = { w: 22, h: 18 };
 const ROOMS = {
   library: { x: 0, y: 0, w: 8, h: 7, name: '자료실', what: '파일 읽기 · 검색', tone: '#c58449', spot: [4.6, 5.6] },
-  dev:     { x: 8, y: 0, w: 7, h: 7, name: '개발실', what: 'Codex 작업 공간', tone: '#4d6fd6', spot: [13.35, 3.75], agent: [9.5, 6.0] },
+  dev:     { x: 8, y: 0, w: 7, h: 7, name: '개발실', what: 'Claude · Codex 작업 공간', tone: '#4d6fd6', spot: [13.35, 3.75], agent: [9.5, 6.0] },
   server:  { x: 15, y: 0, w: 7, h: 7, name: '서버실', what: '명령 실행 · git', tone: '#535c74', spot: [18.5, 5.8] },
   web:     { x: 0, y: 11, w: 8, h: 7, name: '정보검색실', what: '웹 · MCP 도구', tone: '#2b9672', spot: [3.4, 15.6] },
   meeting: { x: 8, y: 11, w: 7, h: 7, name: '회의실', what: '계획 · 할 일', tone: '#8360c9', spot: [13.9, 14.4] },
@@ -377,7 +377,7 @@ const DOORS = { library: 4, dev: 11.5, server: 18.5, web: 4, meeting: 11.5, rest
 const LANE = 9.6, DEV_AISLE = 11.6, DEV_BACK = 4.4;
 const SPOTS = { elevIn: [.45, 9.1], elevOut: [2.2, 9.5] };
 const HOME = { claude: { spot: [13.35, 3.75], report: [12.05, 3.75] }, codex: { spot: [9.8, 2.95], report: [11.1, 2.95] } };
-const BRAND = { claude: '보조 작업석', codex: 'Codex' };
+const BRAND = { claude: 'Claude', codex: 'Codex' };
 // 층마다 붙인 직원 이름 (층 정리 창에서 정함). 없으면 Claude / Codex
 const curProj = () => { const f = SNAP && SNAP.floors.find(x => x.n === curFloorN); return f ? f.proj : ''; };
 const staff = (kind, proj = curProj()) => ((layout.workers[proj] || {})[kind]) || BRAND[kind];
@@ -901,7 +901,7 @@ function buildScene(sess) {
   scene.me = null; // 사용자는 각 층이 아니라 대표실에 있음
   scene.workers.set(sess.key, makeWorker(sess));
   syncCompanion();
-  $('#alog').innerHTML = '<div class="none">아직 기록이 없어요. 이 층에서 Codex가 움직이면 여기에 쌓여요.</div>';
+  $('#alog').innerHTML = '<div class="none">아직 기록이 없어요. 이 층에서 Claude나 Codex가 움직이면 여기에 쌓여요.</div>';
   renderCrew();
 }
 // 같은 층에서 다른 쪽(Claude↔Codex)이 최근에 일하고 있으면 같이 출근시킴
@@ -909,7 +909,7 @@ function syncCompanion() {
   if (!scene || !SNAP) return;
   const P = primary(); if (!P) return;
   const f = SNAP.floors.find(x => x.sessions.some(s => s.key === scene.primary)); if (!f) return;
-  const mate = f.sessions.filter(s => s.key !== scene.primary && s.state && (s.agent === 'codex' ? 'codex' : 'claude') !== P.kind).sort((a, b) => b.mtime - a.mtime)[0];
+  const mate = f.sessions.filter(s => s.key !== scene.primary && s.state && (s.active || s.waiting || Date.now() - s.mtime < 15 * 60e3) && (s.agent === 'codex' ? 'codex' : 'claude') !== P.kind).sort((a, b) => b.mtime - a.mtime)[0];
   for (const [k, W] of scene.workers) if (k !== scene.primary && (!mate || k !== mate.key)) { removeWorker(W); scene.workers.delete(k); }
   if (mate && !scene.workers.has(mate.key)) scene.workers.set(mate.key, makeWorker(mate));
   renderCrew();
@@ -1385,7 +1385,7 @@ function renderTidy() {
   $('#tidy').innerHTML = `<header><span class="no jua">${F.n && !hidden.has(F.proj) ? fno(F.n) : '숨김'}</span><h3 class="jua" id="tidyH">층 정리</h3><button data-a="close" aria-label="닫기">×</button></header>
   <div class="bd">
     <div class="row"><span class="lab">층 이름</span><input id="tName" value="${esc(layout.names[F.proj] || '')}" placeholder="${esc(F.orig || '새 층')}" maxlength="40"><button class="btn" data-a="name">바꾸기</button></div>
-    <div class="row"><span class="lab">직원 이름</span><input id="tCodex" value="${esc((layout.workers[F.proj] || {}).codex || '')}" placeholder="Codex" maxlength="12" aria-label="이 층 Codex 이름"><button class="btn" data-a="staff">정하기</button></div>
+    <div class="row"><span class="lab">직원 이름</span><input id="tClaude" value="${esc((layout.workers[F.proj] || {}).claude || '')}" placeholder="Claude" maxlength="12" aria-label="이 층 Claude 이름"><input id="tCodex" value="${esc((layout.workers[F.proj] || {}).codex || '')}" placeholder="Codex" maxlength="12" aria-label="이 층 Codex 이름"><button class="btn" data-a="staff">정하기</button></div>
     <div class="row"><span class="lab">꾸미기</span><select id="tTheme" style="flex:1">${Object.entries(THEMES).map(([k, v]) => `<option value="${k}" ${(layout.deco[F.proj] || {}).theme === k ? 'selected' : ''}>${v.name}</option>`).join('')}</select>
       ${PROPS.map(([k, lab]) => `<label class="chip" style="cursor:pointer;padding-right:9px"><input type="checkbox" data-prop="${k}" ${(layout.deco[F.proj] || {})[k] ? 'checked' : ''}>${lab}</label>`).join('')}</div>
     <div class="row"><span class="lab">폴더</span><span class="path">${esc(cwd ? cwd.replace(/^\/(Users|home)\/[^/]+/, '~') : F.proj.startsWith('new:') ? '직접 만든 층' : F.proj)}</span></div>
@@ -1406,7 +1406,7 @@ $('#tidyBg').addEventListener('click', (e) => {
   if (a === 'close') return closeTidy();
   if (a === 'name') { const v = $('#tName').value.trim(); if (v) layout.names[F.proj] = v; else delete layout.names[F.proj]; relayout(); }
   if (a === 'staff') {
-    const c = '', x = $('#tCodex').value.trim();
+    const c = $('#tClaude').value.trim(), x = $('#tCodex').value.trim();
     if (c || x) layout.workers[F.proj] = Object.assign({}, c && { claude: c }, x && { codex: x }); else delete layout.workers[F.proj];
     relayout(); if (scene) { scene.workers.forEach(nameActor); renderCrew(); }
   }
@@ -1444,7 +1444,7 @@ function openSetup(first) {
     <p class="lead">${first ? '반가워요! 두 가지만 정하면 바로 시작해요. 나중에 오른쪽 위 ⚙️ 에서 언제든 바꿀 수 있어요.' : '바꾸면 바로 화면에 반영돼요.'}</p>
     <label class="f">건물 이름<small>지붕 간판과 브라우저 탭에 나와요</small><input type="text" id="suB" maxlength="40" placeholder="예: 우리집 오피스" value="${first ? '' : esc(RAW.building)}"></label>
     <label class="f">내 이름<small>대표실 이름과 업무 일지에 쓰여요</small><input type="text" id="suU" maxlength="40" placeholder="예: 지민" value="${first ? '' : esc(RAW.user)}"></label>
-    <div class="found">${ok(su.hasCodex, 'Codex 기록을 읽고 있어요', 'Codex 기록이 아직 없어요 — Codex에서 작업하면 자동으로 표시됩니다')}<br>기록 읽기 전용 · 추가 모델 호출 없음</div>
+    <div class="found">${ok(su.hasCodex, 'Codex 기록을 찾았어요', 'Codex 기록이 아직 없어요')}<br>${ok(su.hasClaude, 'Claude Code 기록을 찾았어요', 'Claude Code 기록이 아직 없어요')}<br>양쪽 기록 읽기 전용 · 추가 모델 호출 없음 · 상태줄/훅 설치 없음</div>
     <p class="msg" id="suMsg"></p>
     <footer>${first ? '' : '<button type="button" class="btn" id="suX">닫기</button>'}<button type="submit" class="btn pri">${first ? '오피스 열기' : '저장'}</button></footer>`;
   $('#setupBg').classList.add('open');
@@ -1505,7 +1505,7 @@ function syncRecordedState() {
 function onSnap() {
   syncRecordedState();
   const all = allSessions(), now = Date.now();
-  if (!all.length) { clearScene(); scene = null; $('#crew').innerHTML = '<div class="cr">Codex 기록이 아직 없습니다. Codex에서 작업하면 자동으로 표시됩니다.</div>'; renderDir(); return; }
+  if (!all.length) { clearScene(); scene = null; $('#crew').innerHTML = '<div class="cr">기록이 아직 없습니다. Claude Code 또는 Codex에서 작업하면 자동으로 표시됩니다.</div>'; renderDir(); return; }
   const cur = all.find(s => s.key === curKey);
   let target = curKey;
   if (follow) {
@@ -1569,7 +1569,6 @@ function frame(now) {
 
 // ───────── 사용량 (Claude · Codex 5시간 / 주간 한도) ─────────
 function renderUsage(u) {
-  const x = u && u.codex;
   const windowCell = (w, fallback) => {
     if (!w) return `<span class="w">${fallback} 기록 없음</span>`;
     const minutes = w.window_minutes;
@@ -1577,8 +1576,9 @@ function renderUsage(u) {
     const expired = w.resets_at && w.resets_at * 1000 < Date.now();
     return `<span class="w" title="마지막 기록 값 · 실시간 조회 아님">${label} ${Math.round(w.used)}%${expired ? ' (갱신 대기)' : ''}</span>`;
   };
-  $('#usage').innerHTML = `<span class="who cx">◇ Codex</span>` + (x ? windowCell(x.primary, '한도 1') + windowCell(x.secondary, '한도 2') : '<span class="na">사용량 기록 없음</span>');
-  $('#usage').title = x ? `기록 시각 ${new Date(x.at).toLocaleString('ko-KR')}${x.stale ? ' · 오래된 기록' : ''}` : '기록에 사용량 정보가 있을 때 표시합니다';
+  const row = (agent, name) => { const x = u && u[agent]; return `<span class="who ${agent === 'claude' ? 'cl' : 'cx'}">${name}</span>` + (x ? windowCell(x.primary, '한도 1') + windowCell(x.secondary, '한도 2') : '<span class="na">사용 한도 기록 없음</span>'); };
+  $('#usage').innerHTML = row('claude', '✳ Claude') + row('codex', '◇ Codex');
+  $('#usage').title = ['claude','codex'].map(agent => { const x = u && u[agent]; return x ? `${agent}: 기록 시각 ${new Date(x.at).toLocaleString('ko-KR')}${x.stale ? ' · 오래된 기록' : ''}` : `${agent}: 기록에서만 확인 · 상태줄/훅 설치 없음`; }).join('\n');
 }
 
 // ───────── 날씨 ─────────
