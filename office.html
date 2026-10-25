@@ -1,0 +1,2107 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>코덱스 오피스</title>
+<style>
+:root{
+  --page:#e7e9f4; --card:#ffffff; --ink:#262a3f; --sub:#767b95; --faint:#a7abc0; --line:#e4e6f0;
+  --indigo:#3d4291; --indigo-soft:#eceefb; --lit:#ffc94d; --claude:#e2733f; --live:#2f9e66;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--page);color:var(--ink);
+  font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;font-size:13px}
+button{font:inherit;color:inherit}
+.jua{font-family:"Jua","IBM Plex Sans KR",sans-serif;font-weight:400}
+#app{display:grid;grid-template-columns:220px 1fr 290px;gap:14px;height:100vh;padding:14px}
+
+/* ── 왼쪽: 건물 단면 ── */
+#rail{display:flex;flex-direction:column;min-height:0}
+#roof{position:relative;height:58px;flex:none}
+#roof svg{position:absolute;inset:0;width:100%;height:100%}
+#roof .rn{position:absolute;left:0;right:0;bottom:8px;text-align:center;font-size:14px;color:#fff;letter-spacing:.5px;white-space:nowrap}
+#stack{flex:0 1 auto;min-height:0;overflow:auto;background:#d5d9ea;padding:8px 8px 20px;display:flex;flex-direction:column;gap:6px;
+  border-left:6px solid #c4c9de;border-right:6px solid #c4c9de}
+.fl{position:relative;background:var(--card);border-radius:10px;padding:9px 30px 9px 10px;display:grid;grid-template-columns:38px 1fr;gap:2px 8px;cursor:pointer;
+  box-shadow:0 2px 0 #c0c5da}
+.fl:hover{background:#fbfbfe}
+.fl:focus-visible{outline:2px solid var(--indigo);outline-offset:2px}
+.fl .no{grid-row:1/3;font-size:22px;line-height:1;color:var(--indigo);align-self:center}
+.fl b{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fl .sub{font-size:11px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fl .win{grid-column:2;display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.fl .win button{width:13px;height:11px;border:0;border-radius:2px;background:#cfd3e2;padding:0;cursor:pointer}
+.fl .win button.warm{background:#ffe7a8}
+.fl .win button.lit{background:var(--lit);box-shadow:0 0 6px rgba(255,190,60,.8)}
+.fl .win button.cx{border-radius:6px 6px 2px 2px;box-shadow:inset 0 -3px 0 #14a085}
+.fl .win button.lit.cx{box-shadow:inset 0 -3px 0 #14a085,0 0 6px rgba(255,190,60,.8)}
+.fl .win button.cur{outline:2px solid var(--claude);outline-offset:1px}
+.fl .win button:focus-visible{outline:2px solid var(--indigo);outline-offset:1px}
+.fl.cur{background:var(--indigo);color:#fff;box-shadow:0 2px 0 #262a66}
+.fl.cur .no{color:#fff}
+.fl.cur .sub{color:#c9ccf0}
+.fl.cur .win button{background:#5a5fa8}
+.fl.cur .win button.warm{background:#c8b47a}
+.fl.cur .win button.lit{background:var(--lit)}
+.fl .car{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:14px;height:22px;border-radius:3px;background:#ffb347;display:none}
+.fl .car::before,.fl .car::after{content:"";position:absolute;left:6px;width:2px;height:40px;background:#9aa0c4}
+.fl .car::before{bottom:100%}.fl .car::after{top:100%}
+.fl.cur .car{display:block}
+.fl.dim b,.fl.dim .no{opacity:.55}
+.fl .x{position:absolute;right:4px;top:4px;width:22px;height:20px;border:0;border-radius:6px;background:none;color:var(--sub);font-size:14px;line-height:1;cursor:pointer;padding:0;opacity:0}
+.fl:hover .x,.fl:focus-within .x{opacity:1}
+.fl .x:hover{background:#e6e8f3;color:var(--ink)}
+.fl.cur .x{color:#c9ccf0}.fl.cur .x:hover{background:#5a5fa8;color:#fff}
+@media (hover:none){.fl .x{opacity:1}}
+#ground{flex:none;height:34px;background:linear-gradient(#8fcf7a 0 8px,#b98e64 8px);border-radius:0 0 12px 12px;position:relative}
+/* 1층 — 로비 */
+.fl.lobby{background:#fff8e6;box-shadow:0 2px 0 #e6d3a8;padding-right:10px}
+.fl.lobby .no{color:#d38f22}
+.fl.lobby .door{grid-column:2;display:flex;align-items:center;gap:6px;margin-top:5px;font-size:11px;color:#9a6a1c}
+.fl.lobby .door i{width:22px;height:12px;border-radius:3px 3px 0 0;background:linear-gradient(90deg,#9fd3f0 0 48%,#7ab8de 48% 52%,#9fd3f0 52%);box-shadow:inset 0 0 0 1.5px #d38f22;flex:none}
+.fl.lobby.on{background:#ffe9b0;box-shadow:0 2px 0 #d9b25c}
+.fl.lobby.cur{background:#d38f22;box-shadow:0 2px 0 #a86c12;color:#fff}
+.fl.lobby.cur .no,.fl.lobby.cur .sub,.fl.lobby.cur .door{color:#fff}
+/* 로비 안내판 */
+#lobbyV{position:absolute;inset:0;z-index:6;display:none;align-items:center;justify-content:center;padding:70px 20px 20px;background:rgba(255,248,230,.55);backdrop-filter:blur(3px)}
+#lobbyV.open{display:flex}
+#board{width:min(560px,100%);max-height:100%;display:flex;flex-direction:column;background:#3a2f28;border-radius:18px;border:6px solid #c58449;box-shadow:0 14px 40px rgba(60,40,20,.3);color:#fff5e0;overflow:hidden}
+#board header{display:flex;align-items:center;gap:10px;padding:14px 18px 10px;border-bottom:2px dashed rgba(255,230,190,.25)}
+#board h3{margin:0;font-size:20px;font-weight:400;flex:1}
+#board header label{display:flex;align-items:center;gap:6px;font-size:12px;color:#e8d4b0;cursor:pointer}
+#board header label input{accent-color:#ffb347;margin:0}
+#board .list{overflow:auto;padding:6px 10px 10px}
+#board .rw{display:grid;grid-template-columns:44px 1fr auto;gap:2px 10px;align-items:center;padding:8px;border-radius:10px;cursor:pointer}
+#board .rw:hover,#board .rw:focus-visible{background:rgba(255,230,190,.1);outline:none}
+#board .rw .no{grid-row:1/3;font-size:22px;color:#ffb347;text-align:center}
+#board .rw b{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#board .rw .st{font-size:11px;color:#c9b08a;white-space:nowrap}
+#board .rw .st.on{color:#8fe3ab}
+#board .rw .what{grid-column:2/4;font-size:11.5px;color:#e8d4b0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;gap:6px;align-items:center}
+#board .rw .who{font-size:10px;font-weight:700;color:#c8642f;background:#fdf0e8;border-radius:5px;padding:1px 5px;flex:none}
+#board .rw .who.cx{color:#0e7c66;background:#e2f6f1}
+#board .rw.idle b,#board .rw.idle .no{opacity:.55}
+#board .tabs{display:flex;gap:4px;background:rgba(255,230,190,.08);border-radius:9px;padding:3px}
+#board .tabs button{border:0;background:none;color:#e8d4b0;font:inherit;font-size:12px;padding:4px 10px;border-radius:7px;cursor:pointer}
+#board .tabs button.on{background:#ffb347;color:#3a2f28;font-weight:700}
+#board .sum{margin:6px 8px 8px;font-size:12.5px;color:#e8d4b0}
+#board .sum b{color:#ffb347}
+#board .day{position:relative;flex:none;width:96px;height:6px;margin-left:auto;background:rgba(255,230,190,.12);border-radius:3px;overflow:hidden}
+#board .day i{position:absolute;top:0;bottom:0;width:max(1px,.35%);background:#8fe3ab}
+#board .frame{display:flex;align-items:center;gap:14px;margin:8px;padding:14px;border-radius:12px;background:linear-gradient(135deg,#fff3c4,#ffd36b);border:4px solid #c58449;box-shadow:inset 0 0 0 2px #fff8de;color:#4a2a00}
+#board .frame img{width:64px;height:64px;border-radius:12px;background:#fff8e6;flex:none}
+#board .frame span{display:block;font-size:12px;font-weight:700;color:#a86c12}
+#board .frame b{display:block;font-size:24px;font-weight:400;line-height:1.2}
+#board .frame em{font-style:normal;font-size:12px;color:#7a4e10}
+#board .rep-top{margin:6px 8px 10px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+#board .rep-top>b{font-size:16px;font-weight:400;flex:1}
+#board .rep-top span{width:100%;font-size:12px;color:#e8d4b0}#board .rep-top span b{color:#ffb347}
+#board .copy{border:0;background:#ffb347;color:#3a2f28;font:inherit;font-size:11.5px;font-weight:700;border-radius:7px;padding:4px 10px;cursor:pointer}
+#board .rep{margin:0 4px 8px;padding:10px;border-radius:10px;background:rgba(255,230,190,.06);cursor:pointer}
+#board .rep:hover{background:rgba(255,230,190,.12)}
+#board .rep .rh{display:flex;align-items:center;gap:8px}
+#board .rep .rh .no{font-size:18px;color:#ffb347;width:34px;text-align:center}
+#board .rep .rh b{flex:1;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#board .rep .rh .st{font-size:11.5px;color:#8fe3ab;white-space:nowrap}
+#board .rep .tl{margin:6px 0 0 42px;font-size:11px;color:#c9b08a;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+#board .rep .tl i{font-style:normal;background:rgba(255,230,190,.1);border-radius:6px;padding:1px 6px;color:#e8d4b0}
+#board .rep .tl i.e{background:rgba(255,107,91,.2);color:#ffb0a6}
+#board .rep ul{margin:6px 0 0 42px;padding-left:14px;font-size:12px;color:#fff5e0;line-height:1.5}
+#board .rep .files{margin:6px 0 0 42px;display:flex;flex-wrap:wrap;gap:4px;font-size:10.5px;color:#c9b08a}
+#board .rep .files i{font-style:normal;font-family:ui-monospace,Menlo,monospace;background:rgba(143,227,171,.12);color:#bfeccc;border-radius:5px;padding:1px 5px}
+#board .gap{height:1px;background:rgba(255,230,190,.2);margin:6px 8px}
+/* 층 알림 — 질문(주황) · 에러(빨강) 이 오면 그 층 카드가 깜빡임 */
+.fl.ask{animation:flAsk 1s ease-in-out infinite}
+.fl.err{animation:flErr 1s ease-in-out infinite}
+@keyframes flAsk{50%{box-shadow:0 0 0 3px #ffb347,0 0 14px #ffb347}}
+@keyframes flErr{50%{box-shadow:0 0 0 3px #ff6b5b,0 0 14px #ff6b5b}}
+.fl .tag{font-size:10px;font-weight:700;border-radius:5px;padding:1px 5px;margin-left:4px;background:#ffb347;color:#4a2a00}
+.fl.err .tag{background:#ff6b5b;color:#fff}
+#app>*{min-width:0}#center{min-height:250px}#title{min-width:0}#title .tx b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#usage .na{white-space:nowrap}
+@media(max-width:760px){#app{padding:8px;gap:8px;grid-template-rows:150px minmax(350px,1fr)}#rail{max-height:150px}#head{left:10px;right:10px;top:10px;flex-wrap:wrap;gap:6px}#title{flex:1}#usage{order:3;width:100%;margin:0;font-size:10px;grid-template-columns:auto 1fr 1fr;gap:4px;padding:5px 8px}#live{margin:0}#tools{top:108px;right:10px}#crew{left:8px;right:8px;bottom:8px}.cr{min-width:245px}}
+@media (prefers-reduced-motion:reduce){.fl.ask,.fl.err{animation:none;box-shadow:0 0 0 3px #ffb347}}
+/* 대표실 */
+.fl.ceo{background:#2f2a4a;color:#fff;box-shadow:0 2px 0 #1d1930;padding-right:10px}
+.fl.ceo .no{color:#ffd34d;font-size:15px}
+.fl.ceo .sub{color:#c9c3e8}
+.fl.ceo.cur{outline:2px solid #ffd34d;outline-offset:1px}
+/* 옥상정원 */
+.fl.rf{background:linear-gradient(135deg,#e6f7dc,#c9ecb8);box-shadow:0 2px 0 #8fc47a;padding-right:10px}
+.fl.rf .no{color:#2f9e66}.fl.rf b{color:#2f6b45}.fl.rf .sub{color:#4d7d5c}
+.fl.rf.cur{background:#2f9e66;box-shadow:0 2px 0 #1e7048}.fl.rf.cur .no,.fl.rf.cur b,.fl.rf.cur .sub{color:#fff}
+/* 지하 — 관리실 */
+#base{flex:none;display:none;background:linear-gradient(#b98e64,#8a6444);padding:2px 8px 10px;border-radius:0 0 12px 12px;
+  background-image:radial-gradient(circle at 18% 30%,rgba(255,255,255,.12) 0 3px,transparent 4px),radial-gradient(circle at 78% 70%,rgba(0,0,0,.1) 0 4px,transparent 5px),linear-gradient(#b98e64,#8a6444)}
+#rail.hasBase #ground{border-radius:0}
+#rail.hasBase #base{display:block;overflow:hidden}
+#base .fl{background:#fff6ea;box-shadow:0 2px 0 #6e4f35}
+#base .fl .no{color:#8a6444}
+#base .fl.cur{background:#6e4f35;box-shadow:0 2px 0 #4a3423}
+#base .fl.cur .no{color:#fff}
+#ground::before{content:"";position:absolute;left:50%;top:-14px;width:46px;height:14px;margin-left:-23px;background:#9aa0c4;border-radius:6px 6px 0 0}
+#unhide{flex:none;margin-top:8px;border:0;background:none;color:var(--sub);font-size:12px;cursor:pointer;padding:6px}
+#unhide:hover{color:var(--ink)}
+/* ── 층 정리 창 ── */
+/* 처음 설정 창 */
+#setupBg{position:fixed;inset:0;background:rgba(38,42,63,.38);display:none;align-items:center;justify-content:center;z-index:30;padding:16px}
+#setupBg.open{display:flex}
+#setup{background:var(--card);border-radius:20px;box-shadow:0 18px 50px rgba(40,40,90,.3);width:min(460px,100%);max-height:100%;overflow:auto;padding:22px 22px 18px}
+#setup h3{margin:0 0 4px;font-size:22px;font-weight:400;color:var(--indigo)}
+#setup .lead{margin:0 0 14px;color:var(--sub);font-size:12.5px;line-height:1.6}
+#setup label.f{display:block;margin:12px 0 0;font-size:12.5px;font-weight:600}
+#setup label.f small{display:block;font-weight:400;color:var(--sub);margin:2px 0 6px}
+#setup input[type=text]{width:100%;font:inherit;font-size:14px;border:1px solid var(--line);border-radius:10px;padding:9px 11px;color:var(--ink);background:#fff}
+#setup input[type=text]:focus{outline:2px solid var(--indigo);outline-offset:-1px}
+#setup .ck{display:flex;gap:8px;align-items:flex-start;margin:14px 0 0;font-size:12.5px;cursor:pointer}
+#setup .ck input{margin-top:3px}
+#setup .ck small{display:block;color:var(--sub)}
+#setup .found{margin:14px 0 0;padding:10px 12px;background:#f6f7fc;border-radius:10px;font-size:12px;line-height:1.7;color:#4b5068}
+#setup .note{font-size:12px;color:var(--sub);margin:12px 0 0;line-height:1.6}
+#setup .msg{color:#d4483b;font-size:12px;min-height:16px;margin:10px 0 0}
+#setup footer{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+#setup .btn{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 14px;font-size:13px;cursor:pointer}
+#setup .btn.pri{background:var(--indigo);border-color:var(--indigo);color:#fff}
+#tidyBg{position:fixed;inset:0;background:rgba(38,42,63,.32);display:none;align-items:center;justify-content:center;z-index:20;padding:16px}
+#tidyBg.open{display:flex}
+#tidy{background:var(--card);border-radius:18px;box-shadow:0 18px 50px rgba(40,40,90,.28);width:min(520px,100%);max-height:min(640px,100%);display:flex;flex-direction:column;overflow:hidden}
+#tidy header{display:flex;align-items:center;gap:10px;padding:16px 18px 10px}
+#tidy header .no{font-size:24px;color:var(--indigo)}
+#tidy header h3{margin:0;font-size:18px;font-weight:400;flex:1}
+#tidy header button{border:0;background:none;font-size:20px;color:var(--sub);cursor:pointer;width:30px;height:30px;border-radius:8px}
+#tidy header button:hover{background:#f0f1f7;color:var(--ink)}
+#tidy .bd{overflow:auto;padding:0 18px 12px}
+#tidy .row{display:flex;align-items:center;gap:8px;margin:10px 0}
+#tidy .lab{font-size:12px;color:var(--sub);width:64px;flex:none}
+#tidy .path{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#4b5068;word-break:break-all}
+#tidy input,#tidy select{font:inherit;font-size:12.5px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:#fff;color:var(--ink);min-width:0}
+#tidy input{flex:1}
+#tidy input:focus,#tidy select:focus{outline:2px solid var(--indigo);outline-offset:-1px}
+#tidy h4{margin:16px 0 6px;font-size:12px;color:var(--sub);font-weight:600}
+#tidy .sl{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--line);font-size:12px}
+#tidy .sl .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tidy .sl .w{color:var(--faint);font-size:11px;flex:none}
+#tidy .sl select{width:130px;flex:none}
+#tidy .who{font-size:10px;font-weight:700;color:#c8642f;background:#fdf0e8;border-radius:5px;padding:1px 5px;flex:none}
+#tidy .who.cx{color:#0e7c66;background:#e2f6f1}
+#tidy .btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;color:var(--ink);white-space:nowrap}
+#tidy .btn:hover{border-color:#cdd0e0;background:#fafbfe}
+#tidy .btn.pri{background:var(--indigo);border-color:var(--indigo);color:#fff}
+#tidy .chip{display:inline-flex;align-items:center;gap:6px;background:var(--indigo-soft);border-radius:8px;padding:4px 4px 4px 9px;font-size:12px;margin:0 6px 6px 0}
+#tidy .chip button{border:0;background:#fff;border-radius:6px;font-size:11px;padding:3px 7px;cursor:pointer;color:var(--sub)}
+#tidy .chip button:hover{color:var(--ink)}
+#tidy .note{font-size:11.5px;color:var(--sub);margin:4px 0}
+#tidy footer{display:flex;gap:8px;align-items:center;padding:12px 18px;border-top:1px solid var(--line);background:#fafbfe}
+#tidy footer .sp{flex:1}
+#tidy footer .lnk{border:0;background:none;color:var(--sub);font-size:11.5px;cursor:pointer;padding:4px;text-decoration:underline}
+
+/* ── 가운데: 디오라마 ── */
+#center{position:relative;overflow:hidden;border-radius:22px;
+  background:
+    radial-gradient(120px 40px at 18% 18%,rgba(255,255,255,.85),transparent 70%),
+    radial-gradient(160px 46px at 78% 12%,rgba(255,255,255,.75),transparent 70%),
+    radial-gradient(130px 36px at 88% 64%,rgba(255,255,255,.6),transparent 70%),
+    linear-gradient(180deg,#c8dcff 0%,#e3e2fb 52%,#fbe3d8 100%)}
+/* 밤 모드 — 남색 하늘 · 별 · 달 */
+#center.night{background:
+    radial-gradient(28px 28px at 84% 14%,#fff6d8 0 45%,rgba(255,240,190,.35) 55%,transparent 72%),
+    radial-gradient(1.5px 1.5px at 12% 20%,#fff 99%,transparent),radial-gradient(1px 1px at 22% 8%,#fff 99%,transparent),
+    radial-gradient(1.5px 1.5px at 35% 15%,#fff 99%,transparent),radial-gradient(1px 1px at 48% 6%,#fff 99%,transparent),
+    radial-gradient(1.5px 1.5px at 60% 22%,#fff 99%,transparent),radial-gradient(1px 1px at 70% 9%,#fff 99%,transparent),
+    radial-gradient(1px 1px at 93% 30%,#fff 99%,transparent),radial-gradient(1.5px 1.5px at 6% 42%,#fff 99%,transparent),
+    radial-gradient(1px 1px at 95% 52%,#fff 99%,transparent),radial-gradient(1px 1px at 4% 70%,#fff 99%,transparent),
+    linear-gradient(180deg,#1b1f4a 0%,#2c2f6b 55%,#4a3f78 100%)}
+#cv{position:absolute;inset:0;width:100%;height:100%;cursor:grab;touch-action:none}
+#cv.drag{cursor:grabbing}
+#ov{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+#head{position:absolute;left:16px;top:16px;right:16px;display:flex;align-items:flex-start;gap:10px;pointer-events:none}
+#title{pointer-events:auto;background:rgba(255,255,255,.92);border-radius:14px;padding:9px 12px 9px 14px;display:flex;align-items:center;gap:12px;
+  box-shadow:0 6px 20px rgba(60,60,110,.10);max-width:min(520px,70%)}
+#title .fno{font-size:26px;color:var(--indigo);line-height:1}
+#title .tx{min-width:0}
+#title .tx b{display:block;font-size:15px;font-weight:700}
+#title .tx span{display:block;font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sessBtn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:6px 10px;font-size:12px;cursor:pointer;white-space:nowrap;flex:none}
+#sessBtn:hover{border-color:#cdd0e0}
+#sessBtn:focus-visible{outline:2px solid var(--indigo)}
+#pop{position:absolute;left:16px;top:76px;width:330px;max-height:60%;overflow:auto;background:#fff;border-radius:14px;box-shadow:0 12px 34px rgba(50,50,100,.18);padding:8px;display:none;z-index:5}
+#pop.open{display:block}
+#pop label{display:flex;align-items:center;gap:8px;padding:6px 8px 10px;font-size:12px;color:var(--sub);border-bottom:1px solid var(--line);margin-bottom:4px;cursor:pointer}
+#pop label input{accent-color:var(--indigo);margin:0}
+.ss{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:12px}
+.ss:hover{background:#f5f6fb}
+.ss .who{font-size:10px;font-weight:700;color:#c8642f;background:#fdf0e8;border-radius:5px;padding:1px 5px;flex:none}
+.ss .who.cx{color:#0e7c66;background:#e2f6f1}
+.ss .t{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ss .w{font-size:11px;color:var(--faint)}
+.ss .now{font-size:10.5px;color:var(--live);font-weight:600}
+.ss.cur{background:var(--indigo-soft);font-weight:600}
+/* 가리기 모드 — 캡처용: 이름 · 층/세션 이름 · 작업 내용을 흐리게 */
+body.priv :is(.fl:not(.rf):not(.lobby) b,#tname,#mproj,#msess,.al b,.al p,.bub,.nm,.cr .r1 b,.cr .r2,#board .rw b,#board .what,#board .frame b,#board .frame em,#board .rep .rh b,#board .rep .tl,#board .rep ul,#board .rep .files,#pop .t,#tidy .t,#tidy .path,#tidy input){filter:blur(5px);user-select:none}
+#privBtn.on{outline:2px solid #ffb347}
+/* 사용량 — 항상 오른쪽 위 */
+#usage{margin-left:auto;pointer-events:auto;background:rgba(255,255,255,.92);border-radius:12px;padding:6px 10px;display:grid;grid-template-columns:auto auto auto;gap:3px 8px;align-items:center;font-size:11px;color:var(--sub);box-shadow:0 6px 20px rgba(60,60,110,.10)}
+#usage:empty{display:none}
+#usage .who{font-weight:700;font-size:10.5px}
+#usage .who.cl{color:#c8642f}#usage .who.cx{color:#0e7c66}
+#usage .w{display:flex;align-items:center;gap:5px;white-space:nowrap}
+#usage .bar{width:42px;height:6px;border-radius:3px;background:#e6e8f3;overflow:hidden}
+#usage .bar i{display:block;height:100%;border-radius:3px}
+#usage .na{grid-column:2/4;color:var(--faint)}
+#usage:not(:empty)+#live{margin-left:0}
+#live{margin-left:auto;pointer-events:auto;display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--sub);background:rgba(255,255,255,.92);border-radius:999px;padding:6px 11px}
+#live i{width:7px;height:7px;border-radius:50%;background:#c3c6d6}
+#live.ok{color:var(--live)}
+#live.ok i{background:var(--live);animation:breathe 2s ease-in-out infinite}
+@keyframes breathe{50%{box-shadow:0 0 0 4px rgba(47,158,102,.18)}}
+#tools{position:absolute;right:16px;top:64px;display:flex;flex-direction:column;gap:6px}
+#tools button{width:34px;height:34px;border:0;border-radius:10px;background:rgba(255,255,255,.92);cursor:pointer;font-size:15px;color:#555a74;box-shadow:0 3px 10px rgba(60,60,110,.08)}
+#tools button:hover{background:#fff}
+#tools button:focus-visible{outline:2px solid var(--indigo)}
+#crew{position:absolute;left:16px;right:16px;bottom:14px;display:flex;gap:10px;overflow-x:auto;padding:2px 2px 4px}
+.cr{flex:none;width:236px;background:rgba(255,255,255,.95);border-radius:14px;padding:9px 12px 9px 9px;display:flex;gap:10px;cursor:pointer;
+  box-shadow:0 6px 18px rgba(60,60,110,.10);border:2px solid transparent}
+.cr:hover{border-color:#dcdff0}
+.cr.claude{border-color:#f6d7c4}.cr.codex{border-color:#bfe8dd}
+.cr img{width:44px;height:44px;border-radius:12px;background:#f1f2f9;flex:none}
+.cr .m{min-width:0;flex:1}
+.cr .r1{display:flex;align-items:center;gap:6px}
+.cr .r1 b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cr .r2{font-size:11.5px;color:#565b74;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.cr .r3{font-size:11px;color:var(--faint);margin-top:1px}
+.st{margin-left:auto;font-size:10.5px;font-weight:600;border-radius:6px;padding:1px 6px;flex:none}
+.st.think{background:#efeaff;color:#6a4fc4}.st.work{background:#e6efff;color:#3a62c8}.st.sweat{background:#ffe9e5;color:#c63f2b}
+.st.rest{background:#f0f1f6;color:#7a7f98}.st.report{background:#e3f5eb;color:#26855a}
+#empty{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;color:var(--sub);line-height:1.8}
+#center.fade #cv,#center.fade #ov{opacity:.1;transition:opacity .2s}
+
+/* 간판·이름표·말풍선 */
+.sign{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;white-space:nowrap}
+.sign b{font-family:"Jua",sans-serif;font-weight:400;font-size:13px;color:#fff;padding:3px 10px 2px;border-radius:7px;box-shadow:0 2px 0 rgba(0,0,0,.18)}
+.sign span{font-size:10.5px;color:#5b5f78;background:rgba(255,255,255,.88);border-radius:5px;padding:1px 6px;margin-top:3px}
+.sign.plate{transform:translate(-50%,-50%) skewY(26.5deg)}
+.sign.plate span{display:none}
+.sign.on b{box-shadow:0 0 0 3px rgba(255,201,77,.75),0 2px 0 rgba(0,0,0,.18)}
+.nm{position:absolute;transform:translate(-50%,0);transform-origin:50% 0;white-space:nowrap;font-size:11px;font-weight:600;
+  background:#fff;border-radius:7px;padding:2px 7px;box-shadow:0 2px 0 rgba(40,40,80,.12);max-width:190px;overflow:hidden;text-overflow:ellipsis;border-bottom:2px solid}
+.nm em{font-style:normal;font-weight:500;color:var(--sub)}
+.bub{position:absolute;transform:translate(-50%,-100%);background:#fff;border-radius:14px;padding:7px 11px;font-size:12px;line-height:1.45;
+  width:max-content;max-width:230px;box-shadow:0 6px 18px rgba(50,50,100,.14);animation:pop .2s cubic-bezier(.3,1.6,.5,1)}
+.bub::after{content:"";position:absolute;left:50%;bottom:-7px;margin-left:-7px;border:7px solid transparent;border-bottom:0;border-top-color:inherit}
+.bub{border-top-color:#fff}
+.bub .k{display:block;font-size:11px;font-weight:600;color:var(--sub)}
+.bub.think{background:#f3f0ff;border-top-color:#f3f0ff;border-radius:18px}
+.bub.think::after{border:0;width:9px;height:9px;border-radius:50%;background:#f3f0ff;bottom:-12px;margin-left:-14px}
+.bub.think .k{color:#6a4fc4}
+.bub.error{background:#fff0ed;border-top-color:#fff0ed}
+.bub.error .k{color:#c63f2b}
+.bub.report{background:#e9f8ef;border-top-color:#e9f8ef}
+.bub.report .k{color:#26855a}
+.bub.user{background:#fff6dc;border-top-color:#fff6dc}
+@keyframes pop{from{opacity:0;transform:translate(-50%,-80%) scale(.85)}}
+
+/* ── 오른쪽: 업무 일지 ── */
+#right{background:var(--card);border-radius:22px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+#jhead{padding:18px 18px 12px;border-bottom:1px solid var(--line)}
+#jhead h2{margin:0 0 8px;font-size:19px;color:var(--indigo)}
+#jhead dl{margin:0;display:grid;grid-template-columns:48px 1fr;gap:3px 6px;font-size:11.5px}
+#jhead dt{color:var(--sub)}
+#jhead dd{margin:0;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#4b5068;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#alog{flex:1;overflow:auto;padding:12px 16px 16px 14px;position:relative}
+.al{position:relative;padding:0 0 14px 22px}
+.al::before{content:"";position:absolute;left:5px;top:12px;bottom:0;width:2px;background:#eceef6}
+.al:last-child::before{display:none}
+.al i{position:absolute;left:0;top:3px;width:12px;height:12px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #e1e3ee}
+.al .h{display:flex;gap:6px;align-items:baseline}
+.al .h b{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.al .h time{margin-left:auto;font-size:10.5px;color:var(--faint);flex:none}
+.al p{margin:2px 0 0;font-size:12px;color:#5a5f78;line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+#alog .none{color:var(--faint);font-size:12px;padding:8px 0}
+@media (max-width:1150px){#app{grid-template-columns:200px 1fr}#right{display:none}}
+@media (max-width:760px){#app{grid-template-columns:1fr;grid-template-rows:auto 1fr}#rail{max-height:220px}#roof{display:none}}
+#app>*{min-width:0}#center{min-height:250px}#title{min-width:0}#title .tx b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#usage .na{white-space:nowrap}
+@media(max-width:760px){#app{padding:8px;gap:8px;grid-template-rows:150px minmax(350px,1fr)}#rail{max-height:150px}#head{left:10px;right:10px;top:10px;flex-wrap:wrap;gap:6px}#title{flex:1}#usage{order:3;width:100%;margin:0;font-size:10px;grid-template-columns:auto 1fr 1fr;gap:4px;padding:5px 8px}#live{margin:0}#tools{top:108px;right:10px}#crew{left:8px;right:8px;bottom:8px}.cr{min-width:245px}}
+@media (prefers-reduced-motion:reduce){.bub{animation:none}#live.ok i{animation:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="rail">
+    <div id="roof"><svg viewBox="0 0 220 58" preserveAspectRatio="none"><rect x="96" y="2" width="3" height="18" fill="#9aa0c4"/><circle cx="97.5" cy="3" r="3" fill="#ff7a6b"/><path d="M0 58 L18 20 H202 L220 58 Z" fill="#3d4291"/><rect x="18" y="20" width="184" height="5" fill="#5a5fa8"/></svg><div class="rn jua" id="bname">코덱스 오피스</div></div>
+    <div id="stack"></div>
+    <div id="ground"></div>
+    <div id="base"></div>
+    <button id="unhide" hidden></button>
+  </aside>
+  <div id="setupBg"><form id="setup" role="dialog" aria-modal="true" aria-labelledby="setupH" autocomplete="off"></form></div>
+  <div id="tidyBg"><div id="tidy" role="dialog" aria-modal="true" aria-labelledby="tidyH"></div></div>
+
+  <main id="center">
+    <canvas id="cv"></canvas>
+    <div id="ov"></div>
+    <div id="head">
+      <div id="title"><span class="fno jua" id="tfl">-</span><div class="tx"><b id="tname">연결 중</b><span id="tsub">세션 기록을 읽고 있어요</span></div><button id="sessBtn" aria-haspopup="true" aria-expanded="false">세션 ▾</button></div>
+      <div id="usage" title=""></div>
+      <div id="live"><i></i><span>LIVE</span></div>
+    </div>
+    <div id="pop" role="menu"></div>
+    <div id="tools"><button id="zin" aria-label="확대">＋</button><button id="zout" aria-label="축소">－</button><button id="zfit" aria-label="전체 보기">⤢</button><button id="nightBtn" aria-label="밤 모드"></button><button id="setupBtn" aria-label="설정" title="설정: 건물 이름 · 내 이름 · 사용량 표시">⚙️</button><button id="privBtn" aria-label="가리기" title="가리기: 이름·작업 내용을 흐리게 (캡처할 때)">🙈</button></div>
+    <div id="crew"></div>
+    <div id="empty"></div>
+    <div id="lobbyV"><div id="board" role="dialog" aria-label="로비 안내판"></div></div>
+  </main>
+
+  <aside id="right">
+    <div id="jhead"><h2 class="jua">업무 일지</h2><dl><dt>폴더</dt><dd id="mproj">-</dd><dt>세션</dt><dd id="msess">-</dd></dl></div>
+    <div id="alog"><div class="none">아직 기록이 없어요. 이 세션에서 Codex가 움직이면 여기에 쌓여요.</div></div>
+  </aside>
+</div>
+
+<script>
+'use strict';
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+// ───────── 배치 (타일 좌표) ─────────
+const TW = 56, TH = 28, WALL = 84, LOW = 22, ISLE = 1.6, SOIL = 52;
+const WORLD = { w: 22, h: 18 };
+const ROOMS = {
+  library: { x: 0, y: 0, w: 8, h: 7, name: '자료실', what: '파일 읽기 · 검색', tone: '#c58449', spot: [4.6, 5.6] },
+  dev:     { x: 8, y: 0, w: 7, h: 7, name: '개발실', what: 'Codex 작업 공간', tone: '#4d6fd6', spot: [13.35, 3.75], agent: [9.5, 6.0] },
+  server:  { x: 15, y: 0, w: 7, h: 7, name: '서버실', what: '명령 실행 · git', tone: '#535c74', spot: [18.5, 5.8] },
+  web:     { x: 0, y: 11, w: 8, h: 7, name: '정보검색실', what: '웹 · MCP 도구', tone: '#2b9672', spot: [3.4, 15.6] },
+  meeting: { x: 8, y: 11, w: 7, h: 7, name: '회의실', what: '계획 · 할 일', tone: '#8360c9', spot: [13.9, 14.4] },
+  rest:    { x: 15, y: 11, w: 7, h: 7, name: '휴게실', what: '커피 · 쉬는 곳', tone: '#d38f22', spot: [18.6, 15.05] },
+};
+const DOORS = { library: 4, dev: 11.5, server: 18.5, web: 4, meeting: 11.5, rest: 18.5 };
+const LANE = 9.6, DEV_AISLE = 11.6, DEV_BACK = 4.4;
+const SPOTS = { elevIn: [.45, 9.1], elevOut: [2.2, 9.5] };
+const HOME = { claude: { spot: [13.35, 3.75], report: [12.05, 3.75] }, codex: { spot: [9.8, 2.95], report: [11.1, 2.95] } };
+const BRAND = { claude: '보조 작업석', codex: 'Codex' };
+// 층마다 붙인 직원 이름 (층 정리 창에서 정함). 없으면 Claude / Codex
+const curProj = () => { const f = SNAP && SNAP.floors.find(x => x.n === curFloorN); return f ? f.proj : ''; };
+const staff = (kind, proj = curProj()) => ((layout.workers[proj] || {})[kind]) || BRAND[kind];
+const nameActor = (W) => { const n = staff(W.kind); W.actor.setName(n, n !== BRAND[W.kind] ? BRAND[W.kind] : ''); };
+const AG_OFF = [0, 1.1, -1.1, 2.1, -2.1, .55];
+const PEOPLE = {
+  claude: { body: '#e2733f', hair: '#5b3a26', label: 'Claude', dot: '#e2733f', mark: '✳', ahoge: true },
+  Explore: { body: '#3fa46a', hair: '#4a3426', hat: '#2f8655', label: 'Explore', dot: '#3fa46a' },
+  Plan: { body: '#8a5fd0', hair: '#2f2a3a', glasses: true, label: 'Plan', dot: '#8a5fd0' },
+  'general-purpose': { body: '#4a7fe0', hair: '#7a5230', label: '일반', dot: '#4a7fe0' },
+  codex: { body: '#2e3646', hair: '#2a211c', label: 'Codex', dot: '#14a085', headset: '#14a085', mark: '◇' },
+  Guardian: { body: '#d9a930', hair: '#4a3426', cap: '#2e3646', label: '검토 요원', dot: '#d9a930' },
+  Helper: { body: '#5fc4ae', hair: '#5a3a26', label: 'Codex 도우미', dot: '#5fc4ae' },
+  me: { body: '#e86a8a', hair: '#3b2418', dot: '#d38f22', long: true, lady: true, pin: '#ffd34d', skirt: '#2f2a4a' }, // 대표: 긴 머리 · 핑크 재킷 · 머리핀
+  barista: { body: '#6b4a33', hair: '#2a1d17', dot: '#c58449', apron: '#f3e4cf', cap: '#3a2a20' }, // 로비 카페 바리스타
+  guide: { body: '#2b9672', hair: '#2a1d17', dot: '#2b9672', long: true, lady: true, pin: '#ffffff' }, // 로비 안내원
+  other: { body: '#7d8899', hair: '#3a3128', dot: '#7d8899' },
+};
+const pkey = (t) => PEOPLE[t] ? t : 'other';
+const plabel = (t) => (PEOPLE[t] && PEOPLE[t].label) || t;
+
+// ───────── 캔버스 · 카메라 ─────────
+const cv = $('#cv'), center = $('#center'), ov = $('#ov');
+let ctx = cv.getContext('2d');
+let dpr = 1, CW = 0, CH = 0;
+const cam = { x: 0, y: 0, z: 1 };
+const P = (x, y, z = 0) => [(x - y) * TW / 2, (x + y) * TH / 2 - z];
+const toScreen = (x, y, z = 0) => { const p = P(x, y, z); return [p[0] * cam.z + cam.x, p[1] * cam.z + cam.y]; };
+function resize() {
+  const previousWidth = CW, previousHeight = CH;
+  dpr = window.devicePixelRatio || 1; CW = center.clientWidth; CH = center.clientHeight;
+  cv.width = CW * dpr; cv.height = CH * dpr;
+  if (CW > 0 && CH > 0 && (CW !== previousWidth || CH !== previousHeight)) fitView();
+}
+let view = 'office'; // 'office' = 층 사무실, 'ceo' = 대표실, 'lobby' = 1층 로비
+const CEO = { w: 12, h: 10 }, LOBBY = { w: 14, h: 11 }, ROOF = { w: 13, h: 10 };
+const curWorld = () => view === 'ceo' ? CEO : view === 'lobby' ? LOBBY : view === 'roof' ? ROOF : WORLD;
+function fitView() {
+  const Wd = curWorld();
+  const c = [P(-ISLE, Wd.h + ISLE), P(Wd.w + ISLE, -ISLE), P(-ISLE, -ISLE, WALL), P(Wd.w + ISLE, Wd.h + ISLE, -SOIL)];
+  const minX = c[0][0], maxX = c[1][0], minY = c[2][1], maxY = c[3][1];
+  const top = 78, bot = 96;
+  cam.z = Math.min((CW - 30) / (maxX - minX), (CH - top - bot) / (maxY - minY));
+  cam.x = CW / 2 - (minX + maxX) / 2 * cam.z;
+  cam.y = top + (CH - top - bot) / 2 - (minY + maxY) / 2 * cam.z;
+}
+function zoomAt(f, sx, sy) { const nz = Math.max(.35, Math.min(3, cam.z * f)); f = nz / cam.z; cam.x = sx - (sx - cam.x) * f; cam.y = sy - (sy - cam.y) * f; cam.z = nz; }
+new ResizeObserver(resize).observe(center);
+{
+  let drag = null;
+  cv.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y }; cv.setPointerCapture(e.pointerId); cv.classList.add('drag'); closePop(); });
+  cv.addEventListener('pointermove', e => { if (drag) { cam.x = drag.cx + e.clientX - drag.x; cam.y = drag.cy + e.clientY - drag.y; } });
+  const up = () => { drag = null; cv.classList.remove('drag'); };
+  cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+  cv.addEventListener('wheel', e => { e.preventDefault(); const r = cv.getBoundingClientRect(); zoomAt(Math.exp(-e.deltaY * .0015), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+  cv.addEventListener('dblclick', fitView);
+  $('#zin').onclick = () => zoomAt(1.2, CW / 2, CH / 2);
+  $('#zout').onclick = () => zoomAt(1 / 1.2, CW / 2, CH / 2);
+  $('#zfit').onclick = fitView;
+}
+
+// ───────── 그리기 도구 ─────────
+let EDGE = null;
+function hex(c) { c = c.replace('#', ''); return [0, 2, 4].map(i => parseInt(c.substr(i, 2), 16)); }
+function shade(c, k) { if (c[0] !== '#') return c; const [r, g, b] = hex(c); const f = (v) => Math.round(k < 0 ? v * (1 + k) : v + (255 - v) * k); return `rgb(${f(r)},${f(g)},${f(b)})`; }
+function poly(pts, fill, stroke, lw = 1) {
+  ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw; ctx.lineJoin = 'round'; ctx.stroke(); }
+}
+const faceY = (y, x0, x1, z0, z1, c) => poly([P(x0, y, z0), P(x1, y, z0), P(x1, y, z1), P(x0, y, z1)], c, EDGE, .8);
+const faceX = (x, y0, y1, z0, z1, c) => poly([P(x, y0, z0), P(x, y1, z0), P(x, y1, z1), P(x, y0, z1)], c, EDGE, .8);
+const faceZ = (x0, y0, x1, y1, z, c) => poly([P(x0, y0, z), P(x1, y0, z), P(x1, y1, z), P(x0, y1, z)], c, EDGE, .8);
+function box(x, y, w, d, h, c, z0 = 0) {
+  const e = EDGE; EDGE = 'rgba(55,45,70,.28)';
+  faceY(y + d, x, x + w, z0, z0 + h, shade(c, -.08));
+  faceX(x + w, y, y + d, z0, z0 + h, shade(c, -.2));
+  faceZ(x, y, x + w, y + d, z0 + h, c);
+  EDGE = e;
+}
+function ellipse(x, y, rx, ry, c) { ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill(); }
+function circle(x, y, r, c, s) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = c; ctx.fill(); if (s) { ctx.strokeStyle = s; ctx.lineWidth = 1; ctx.stroke(); } }
+function rrect(x, y, w, h, r, c, s) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fillStyle = c; ctx.fill(); if (s) { ctx.strokeStyle = s; ctx.lineWidth = 1; ctx.stroke(); } }
+// 벽·물건 앞면에 붙은 글씨 — 면의 기울기에 맞춰 비스듬히 씀
+// on: 'y' = 뒤쪽 오른벽처럼 x 방향으로 뻗은 면(오른쪽 아래로 기움) / 'x' = 왼벽처럼 y 방향으로 뻗은 면(오른쪽 위로 기움)
+function wallText(txt, x, y, z, on, font, color, align = 'center') {
+  const [tx, ty] = P(x, y, z);
+  ctx.save(); ctx.translate(tx, ty); ctx.transform(1, on === 'y' ? TH / TW : -TH / TW, 0, 1, 0, 0);
+  ctx.font = font; ctx.fillStyle = color; ctx.textAlign = align; ctx.textBaseline = 'middle'; ctx.fillText(txt, 0, 0);
+  ctx.restore();
+}
+let seed = 13; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+// ───────── 가구 ─────────
+const items = [];
+const add = (x, y, w, d, draw, bias = 0) => items.push({ k: x + w / 2 + y + d / 2 + bias, draw });
+const BOOKS = ['#e0574c', '#4f7fd9', '#f2b545', '#58a86a', '#9a6bd1', '#ee8c5a', '#3c5a6e', '#efe2c4'];
+
+function shelfY(x, y, w) {
+  const books = []; for (let s = 0; s < 3; s++) { let bx = x + .12; while (bx < x + w - .15) { const bw = .1 + rnd() * .12; books.push([bx, bw, s, BOOKS[rnd() * 8 | 0], 12 + rnd() * 6]); bx += bw + .02; } }
+  add(x, y, w, .55, () => {
+    box(x, y, w, .55, 72, '#d6b088');
+    for (const [bx, bw, s, c, bh] of books) faceY(y + .55, bx, bx + bw, 6 + s * 22, 6 + s * 22 + bh, c);
+    for (let s = 0; s < 3; s++) faceY(y + .55, x, x + w, 4 + s * 22, 6 + s * 22, '#b48a60');
+  });
+}
+function shelfX(x, y, d) {
+  const books = []; for (let s = 0; s < 3; s++) { let by = y + .12; while (by < y + d - .15) { const bw = .1 + rnd() * .12; books.push([by, bw, s, BOOKS[rnd() * 8 | 0], 12 + rnd() * 6]); by += bw + .02; } }
+  add(x, y, .55, d, () => {
+    box(x, y, .55, d, 72, '#d6b088');
+    for (const [by, bw, s, c, bh] of books) faceX(x + .55, by, by + bw, 6 + s * 22, 6 + s * 22 + bh, shade(c, -.12));
+    for (let s = 0; s < 3; s++) faceX(x + .55, y, y + d, 4 + s * 22, 6 + s * 22, '#a07a52');
+  });
+}
+function table(x, y, w, d, c = '#e4d3b8', h = 24) {
+  add(x, y, w, d, () => {
+    for (const [lx, ly] of [[x + .08, y + d - .16], [x + w - .16, y + d - .16], [x + w - .16, y + .08]]) box(lx, ly, .08, .08, h - 5, '#9aa0b4');
+    box(x, y, w, d, 5, c, h - 5);
+  });
+}
+function chair(x, y, c, back = true) {
+  add(x, y, .55, .55, () => {
+    box(x + .22, y + .22, .1, .1, 9, '#8d92a6');
+    box(x, y, .55, .55, 5, c, 9);
+    if (back) box(x, y, .55, .1, 14, shade(c, -.05), 14);
+  });
+}
+function screenLines(y, x0, z, n, on) {
+  const t = performance.now() / 1000, sp = on ? 4 : .3;
+  for (let i = 0; i < n; i++) faceY(y, x0, x0 + .2 + ((i * 37 + Math.floor(t * sp + x0 * 3)) % 4) * .09, z - i * 3, z + 1.3 - i * 3, ['#86b8ff', '#ffbb70', '#8fe3ab'][i % 3]);
+}
+function monitor(x, y, desk = 24, screen = '#29324a') {
+  add(x, y + .05, .8, .12, () => {
+    box(x + .35, y + .02, .1, .08, 5, '#a5aabb', desk);
+    box(x, y, .8, .1, 17, '#3b4256', desk + 5);
+    faceY(y + .1, x + .06, x + .74, desk + 7, desk + 20, screen);
+    screenLines(y + .1, x + .1, desk + 16, 3, busy.has(zoneAt(x, y)));
+  });
+}
+function monitorBack(x, y, desk) { // 뒷면 (Claude·내 책상)
+  add(x, y, .9, .12, () => { box(x + .4, y + .02, .1, .08, 5, '#a5aabb', desk); box(x, y, .9, .12, 20, '#cfd3e0', desk + 5); faceY(y + .12, x + .38, x + .52, desk + 12, desk + 16, '#9aa0b4'); }, .02);
+}
+function plant(x, y, big = 1) {
+  add(x, y, .5, .5, () => {
+    box(x, y, .5, .5, 13, '#f0e8de');
+    const [px, py] = P(x + .25, y + .25, 13);
+    for (const [dx, dy, r, c] of [[0, -14, 12, '#4f9a5a'], [-8, -8, 9, '#5aae66'], [8, -9, 9, '#468c50'], [0, -22, 8, '#6cc078']]) circle(px + dx * big, py + dy * big, r * big, c, 'rgba(40,70,40,.25)');
+  });
+}
+function tree(x, y, s = 1) {
+  add(x, y, .5, .5, () => {
+    box(x + .15, y + .15, .2, .2, 26 * s, '#8a5a3b');
+    const [px, py] = P(x + .25, y + .25, 26 * s);
+    for (const [dx, dy, r, c] of [[0, -10, 20, '#4d9a4c'], [-12, -2, 14, '#5fae5a'], [12, -4, 15, '#468a45'], [2, -24, 14, '#77c16b']]) circle(px + dx * s, py + dy * s, r * s, c, 'rgba(40,70,40,.28)');
+  });
+}
+function bush(x, y) { add(x, y, .5, .5, () => { const [px, py] = P(x + .25, y + .25); for (const [dx, dy, r, c] of [[-6, -5, 8, '#5aa858'], [6, -6, 9, '#4d9a4c'], [0, -11, 8, '#72bd66']]) circle(px + dx, py + dy, r, c, 'rgba(40,70,40,.25)'); }); }
+function rack(x, y) {
+  const leds = []; for (let r = 0; r < 7; r++) for (let j = 0; j < 3; j++) leds.push([r, j, rnd() * 6, ['#5dff9a', '#ffd25a', '#5ab8ff'][rnd() * 3 | 0]]);
+  add(x, y, 1, .9, () => {
+    box(x, y, 1, .9, 80, '#3d4356');
+    for (let r = 0; r < 7; r++) faceY(y + .9, x + .1, x + .9, 8 + r * 10, 14 + r * 10, '#2c3140');
+    const t = performance.now() / 1000, fast = busy.has('server') ? 7 : 1.3;
+    for (const [r, j, ph, c] of leds) if (Math.sin(t * fast * 3 + ph * 7) > -.2) faceY(y + .9, x + .62 + j * .09, x + .68 + j * .09, 10 + r * 10, 12 + r * 10, c);
+  });
+}
+function sofa(x, y, w, c) { add(x, y, w, .9, () => { box(x, y, w, .9, 11, c); box(x, y, w, .25, 23, shade(c, -.06)); box(x, y, .2, .9, 17, shade(c, -.03)); box(x + w - .2, y, .2, .9, 17, shade(c, -.03)); }); }
+
+function buildFurniture() {
+  // 자료실
+  shelfY(.3, .05, 3.5); shelfY(4.2, .05, 3.5); shelfX(.05, .9, 3);
+  table(3.1, 2.9, 2.6, 1.3, '#ead3ae');
+  chair(3.3, 4.45, '#c58449', false); chair(4.7, 4.45, '#c58449', false); chair(3.7, 2.2, '#c58449');
+  add(3.6, 3.2, .8, .5, () => { faceZ(3.7, 3.3, 4.1, 3.8, 24.5, '#fffaf0'); faceZ(4.1, 3.3, 4.5, 3.8, 24.5, '#f1e6cf'); }, .1);
+  sofa(6.1, 4.8, 1.5, '#e6a87c'); plant(7.25, 1.0);
+
+  // 개발실: 뒷줄 공용 책상 + Claude 전용 책상
+  table(8.6, 1.05, 4.7, .9, '#f4f6fb');
+  for (let i = 0; i < 3; i++) { monitor(8.85 + i * 1.5, 1.1); chair(9.0 + i * 1.5, 2.05, '#5268a8', false); }
+  // Codex 책상 (청록 명패, 헤드셋 거치대)
+  add(8.7, 3.4, 2.25, .9, () => {
+    for (const [lx, ly] of [[8.78, 4.14], [10.81, 4.14], [10.81, 3.48]]) box(lx, ly, .08, .08, 20, '#9aa0b4');
+    box(8.7, 3.4, 2.25, .9, 5, '#dfe7ef', 20);
+    faceY(4.3, 8.7, 10.95, 4, 20, '#cdd9e4');
+    box(9.45, 4.22, .8, .1, 7, '#f2fbf8', 4); faceY(4.32, 9.55, 10.15, 6, 9, '#14a085');
+    box(10.45, 3.6, .22, .22, 6, '#ffffff', 25);
+  }, .25);
+  monitorBack(8.95, 3.42, 25); monitorBack(9.95, 3.42, 25);
+  // Claude 책상 (주황 의자, 명패, 전화, 머그)
+  add(12.3, 4.3, 2.5, 1, () => {
+    for (const [lx, ly] of [[12.38, 5.14], [14.66, 5.14], [14.66, 4.38]]) box(lx, ly, .08, .08, 20, '#9aa0b4');
+    box(12.3, 4.3, 2.5, 1, 5, '#f2d7b6', 20);
+    faceY(5.3, 12.3, 14.8, 4, 20, '#efc89d');                         // 앞판
+    box(13.2, 5.22, .9, .1, 7, '#fff4e6', 4); faceY(5.32, 13.3, 14.0, 6, 9, '#e2733f');   // 명패
+    const ring = scene && scene.ringUntil > performance.now(), j = ring ? Math.sin(performance.now() / 28) * 1.6 : 0;
+    ctx.save(); ctx.translate(j, 0); box(14.25, 4.55, .38, .3, 5, '#e2563f', 25); ctx.restore();
+    box(12.5, 4.6, .2, .2, 7, '#ffffff', 25);
+    const [px, py] = P(12.6, 4.7, 32); ctx.strokeStyle = 'rgba(200,200,220,.7)'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(px, py); ctx.quadraticCurveTo(px + 3, py - 6, px, py - 11); ctx.stroke();
+  }, .25);
+  monitorBack(12.75, 4.32, 25); monitorBack(13.75, 4.32, 25);
+  chair(13.1, 3.25, '#e2733f');
+  plant(14.3, .6);
+
+  // 서버실
+  for (let i = 0; i < 5; i++) { rack(15.5 + i * 1.25, .35); rack(15.5 + i * 1.25, 2.7); }
+
+  // 정보검색실
+  add(.05, 12.2, .3, 3.8, () => {
+    box(.05, 12.2, .15, 3.8, 46, '#2c3443', 16);
+    faceX(.2, 12.35, 15.85, 20, 58, '#11303a');
+    const [gx, gy] = P(.2, 13.4, 40); circle(gx, gy, 11, '#3f8fe0');
+    ctx.save(); ctx.beginPath(); ctx.arc(gx, gy, 11, 0, 7); ctx.clip();
+    const t = performance.now() / 1000 * (busy.has('web') ? 1.2 : .2);
+    for (let i = 0; i < 4; i++) circle(gx - 14 + ((i * 9 + t * 8) % 28), gy - 4 + (i % 2) * 7, 4.5, '#6fd68f');
+    ctx.restore();
+    for (let i = 0; i < 4; i++) faceX(.2, 14.1, 14.1 + .6 + ((i * 3) % 4) * .3, 48 - i * 6, 50 - i * 6, '#7fe3c4');
+  });
+  table(2.3, 13, 3.4, .9, '#eef8f4'); monitor(2.6, 13.05); monitor(4.2, 13.05);
+  chair(2.75, 14.1, '#2b9672', false); chair(4.35, 14.1, '#2b9672', false);
+  add(6.4, 13.3, .6, .6, () => { box(6.55, 13.45, .3, .3, 4, '#8b6b4a'); box(6.67, 13.57, .06, .06, 16, '#8b6b4a'); const [gx, gy] = P(6.7, 13.6, 30); circle(gx, gy, 10, '#4f8fe0', 'rgba(30,50,90,.3)'); circle(gx - 3, gy - 2, 4, '#6fd68f'); circle(gx + 4, gy + 3, 3, '#6fd68f'); });
+  plant(7.1, 16.9); plant(.7, 16.9);
+
+  // 회의실
+  add(9.2, 11.15, 3.6, .12, () => {
+    box(9.2, 11.15, 3.6, .1, 40, '#c9ccd8', 16);
+    faceY(11.25, 9.3, 12.7, 19, 54, '#ffffff');
+    const b = (primary() || {}).board || [];
+    for (let i = 0; i < Math.min(6, b.length); i++) {
+      const c = b[i].s === 'completed' ? '#c1c4d1' : b[i].s === 'in_progress' ? '#e2563f' : '#4f6bd1';
+      faceY(11.25, 9.5, 9.5 + 1.2 + ((i * 5) % 3) * .5, 48 - i * 5, 49.5 - i * 5, c);
+    }
+  });
+  table(9.3, 13.1, 3.8, 1.5, '#ece4f7');
+  for (let i = 0; i < 3; i++) { chair(9.6 + i * 1.2, 12.4, '#8360c9'); chair(9.6 + i * 1.2, 14.8, '#8360c9', false); }
+  plant(14.3, 17); plant(8.4, 17);
+
+  // 휴게실: 커피 카운터 · 소파 · 낮은 탁자
+  add(16.0, 11.25, 3.0, .75, () => {
+    box(16.0, 11.25, 3.0, .75, 22, '#e9d6b8'); faceY(12.0, 16.0, 19.0, 4, 20, '#d9c2a0');
+    box(16.25, 11.35, .55, .45, 16, '#3a3a44', 22); box(16.38, 11.75, .28, .05, 4, '#ffb347', 30);
+    for (let i = 0; i < 3; i++) box(17.3 + i * .35, 11.55, .18, .18, 5, ['#ffffff', '#ffd9a8', '#c8e6ff'][i], 22);
+    box(18.4, 11.4, .45, .4, 10, '#8fd0a8', 22);
+  });
+  table(17.3, 14.0, 1.8, .9, '#f7efe6', 12);
+  add(17.6, 14.2, .3, .3, () => box(17.6, 14.2, .25, .25, 4, '#ffffff', 12));
+  sofa(17.0, 15.5, 2.5, '#9fb8d8'); sofa(19.9, 13.2, 1.4, '#f4a6a0');
+  plant(21.3, 11.6); plant(15.6, 17); plant(21.2, 16.9, 1.1);
+
+  // 복도: 라운지 · 자판기 · 정수기
+  sofa(13.3, 7.3, 2.3, '#f4a6a0');
+  add(13.7, 8.35, 1.4, .6, () => { box(13.75, 8.4, 1.3, .55, 10, '#f7efe6'); box(14.1, 8.5, .18, .18, 5, '#ffffff', 10); });
+  add(19.7, 7.25, .9, .7, () => { box(19.7, 7.25, .9, .7, 64, '#ef6b5c'); faceY(7.95, 19.8, 20.5, 30, 58, '#2b2f3a'); for (let i = 0; i < 3; i++) faceY(7.95, 19.88 + i * .2, 20.0 + i * .2, 36, 52, ['#ffd25a', '#7ee0a3', '#5ab8ff'][i]); faceY(7.95, 19.85, 20.45, 12, 18, '#ffe9c7'); });
+  add(18.9, 7.3, .5, .5, () => { box(18.9, 7.3, .5, .5, 36, '#eef2f7'); const [cx, cy] = P(19.15, 7.55, 36); ellipse(cx, cy - 8, 8, 10, '#bfe1ff'); });
+  plant(5.2, 7.35); plant(16.3, 7.35, 1.1); plant(21.3, 10.3); plant(7.3, 10.35);
+
+  // 섬 가장자리 나무·덤불
+  tree(-1.1, 18.3, 1.05); tree(22.4, -1.0, .95); tree(23.0, 17.6, 1.15); tree(-1.0, 6.5, .85);
+  for (const [x, y] of [[2.5, 18.7], [9.5, 18.8], [16, 18.7], [22.8, 5], [22.7, 12], [5.5, 18.9], [20, 18.9]]) bush(x, y);
+}
+
+// ───────── 섬 · 바닥 · 벽 ─────────
+function zoneAt(x, y) { for (const [id, r] of Object.entries(ROOMS)) if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h) return id; return null; }
+const speck = []; for (let i = 0; i < 260; i++) speck.push([rnd() * WORLD.w, 7 + rnd() * 4, ['#e0d6c8', '#d8e2ea', '#eadcd0'][rnd() * 3 | 0]]);
+function drawIsland(Wd = WORLD) {
+  const L = -ISLE, R = Wd.w + ISLE, B = Wd.h + ISLE;
+  // 흙 단면
+  faceY(B, L, R, -SOIL, 0, '#b98e64'); faceX(R, L, B, -SOIL, 0, '#a07650');
+  faceY(B, L, R, -10, 0, '#8fcf7a'); faceX(R, L, B, -10, 0, '#7cbd69');
+  for (let i = 0; i < 9; i++) { const x = L + 2 + i * 2.6; faceY(B, x, x + .5, -SOIL + 12 + (i % 3) * 8, -SOIL + 16 + (i % 3) * 8, '#a47b55'); }
+  for (let i = 0; i < 7; i++) { const y = L + 2 + i * 2.9; faceX(R, y, y + .6, -SOIL + 10 + (i % 2) * 12, -SOIL + 14 + (i % 2) * 12, '#8e6847'); }
+  // 잔디 윗면
+  poly([P(L, L), P(R, L), P(R, B), P(L, B)], '#9ad685');
+  for (let i = 0; i < 40; i++) { const x = L + rnd() * (R - L), y = L + rnd() * (B - L); if (x > -.3 && x < Wd.w + .2 && y > -.3 && y < Wd.h + .2) continue; const [px, py] = P(x, y); ellipse(px, py, 3, 1.5, '#86c472'); }
+  // 건물 바닥판 두께
+  box(-.3, -.3, Wd.w + .5, Wd.h + .5, 5, '#f1ede6', -5);
+}
+function drawFloor() {
+  for (let y = 0; y < WORLD.h; y++) for (let x = 0; x < WORLD.w; x++) {
+    const z = zoneAt(x, y);
+    if (z === 'library') { for (let i = 0; i < 3; i++) faceZ(x, y + i / 3, x + 1, y + (i + 1) / 3, 0, (x + i + (y % 2) * 2) % 3 === 0 ? '#e9cfa8' : (x + i) % 2 ? '#f0d9b5' : '#ecd3ad'); }
+    else if (z === 'rest') { for (let i = 0; i < 3; i++) faceZ(x + i / 3, y, x + (i + 1) / 3, y + 1, 0, (y + i) % 3 === 0 ? '#e8c99b' : (y + i) % 2 ? '#efd4ab' : '#ebcfa3'); }
+    else if (z === 'dev') faceZ(x, y, x + 1, y + 1, 0, (x + y) % 2 ? '#dfe7f8' : '#d7e0f4');
+    else if (z === 'server') { faceZ(x, y, x + 1, y + 1, 0, '#d9dde6'); poly([P(x + .08, y + .08), P(x + .92, y + .08), P(x + .92, y + .92), P(x + .08, y + .92)], null, '#c4c9d6', .8); }
+    else if (z === 'web') faceZ(x, y, x + 1, y + 1, 0, (x + y) % 2 ? '#d7f0e5' : '#cdebde');
+    else if (z === 'meeting') faceZ(x, y, x + 1, y + 1, 0, y % 2 ? '#ebe4f7' : '#e6def4');
+    else faceZ(x, y, x + 1, y + 1, 0, '#f6f2ec');
+  }
+  for (const [x, y, c] of speck) { const [px, py] = P(x, y); ellipse(px, py, 1.6, .9, c); }
+  // 러그
+  faceZ(2.6, 2.4, 6.2, 5.3, .4, '#e7a37a'); faceZ(2.8, 2.6, 6.0, 5.1, .5, '#f4c9a4');
+  faceZ(12.9, 6.9 + .4, 15.9, 9, .4, '#fbd3cf');
+  faceZ(8.9, 12.2, 13.6, 15.9, .4, '#ddd2f1');
+  faceZ(16.3, 12.3, 20.6, 16.4, .4, '#f6deb0');
+  faceZ(11.9, 2.9, 15, 6.3, .4, '#fbe3cf'); // Claude 자리 러그
+  for (const id of busy) {
+    const r = ROOMS[id]; if (!r) continue;
+    faceZ(r.x, r.y, r.x + r.w, r.y + r.h, .6, 'rgba(255,214,130,.20)');
+  }
+}
+function drawBackWalls() {
+  const e = EDGE; EDGE = 'rgba(55,45,70,.22)';
+  box(-.3, -.3, WORLD.w + .3, .3, WALL, '#f7f4ef'); box(-.3, 0, .3, WORLD.h, WALL, '#f7f4ef');
+  EDGE = e;
+  const paper = { library: '#f3dfc4', dev: '#dde6f8', server: '#d3d8e2', web: '#d5efe3', meeting: '#ebe2f6', rest: '#f7e6c6' };
+  faceY(0, 0, 8, 0, WALL, paper.library); faceY(0, 8, 15, 0, WALL, paper.dev); faceY(0, 15, 22, 0, WALL, paper.server);
+  faceX(0, 0, 7, 0, WALL, paper.library); faceX(0, 7, 11, 0, WALL, '#f5efe7'); faceX(0, 11, 18, 0, WALL, paper.web);
+  for (let x = .5; x < 8; x += .5) faceY(0, x, x + .08, 0, WALL, 'rgba(197,132,73,.12)');
+  // 개발실 창문
+  for (let i = 0; i < 3; i++) { const x = 8.7 + i * 2.1; faceY(0, x, x + 1.6, 30, 70, '#ffffff'); faceY(0, x + .08, x + 1.52, 33, 67, '#bcd8ff'); faceY(0, x + .08, x + 1.52, 55, 67, '#d5e7ff'); faceY(0, x + .78, x + .82, 33, 67, '#ffffff'); }
+  // 서버실 환풍구
+  for (let i = 0; i < 2; i++) { const x = 16.3 + i * 3.4; faceY(0, x, x + 1.2, 58, 74, '#aeb4c2'); for (let k = 0; k < 4; k++) faceY(0, x + .1, x + 1.1, 60 + k * 3.5, 61.5 + k * 3.5, '#8f96a6'); }
+  // 자료실 액자
+  faceX(0, 2, 3.4, 44, 70, '#ffffff'); faceX(0, 2.1, 3.3, 46, 68, '#f2b545'); faceX(0, 2.1, 3.3, 46, 54, '#58a86a');
+  // 걸레받이
+  faceY(0, 0, WORLD.w, 0, 5, '#ddd3c6'); faceX(0, 0, WORLD.h, 0, 5, '#ddd3c6');
+  // 엘리베이터 (왼쪽 벽, 복도)
+  faceX(.01, 8.05, 10.15, 0, 66, '#8f95aa');
+  const half = .9 * elevOpen;
+  faceX(.02, 8.15, 10.05, 0, 62, '#3a3f52');
+  faceX(.03, 8.15, 9.1 - half, 0, 62, '#cfd4e2'); faceX(.03, 9.1 + half, 10.05, 0, 62, '#cfd4e2');
+  faceX(.02, 8.6, 9.6, 70, 80, '#1d1f2b');
+  wallText(fno(curFloorN || 1), .02, 9.1, 75, 'x', '11px Jua,sans-serif', '#ffb347');
+}
+function buildWalls() {
+  const cream = '#f4ede3';
+  const segX = (y, x0, x1, stripe) => { const n = Math.max(1, Math.round(x1 - x0)); for (let i = 0; i < n; i++) { const a = x0 + (x1 - x0) * i / n, b = x0 + (x1 - x0) * (i + 1) / n; items.push({ k: a + b / 2 - a / 2 + y + .15, draw: () => { box(a, y - .07, b - a, .14, LOW, cream); faceY(y + .07, a, b, 0, 8, stripe); } }); } };
+  const segY = (x, y0, y1, stripe) => { const n = Math.max(1, Math.round(y1 - y0)); for (let i = 0; i < n; i++) { const a = y0 + (y1 - y0) * i / n, b = y0 + (y1 - y0) * (i + 1) / n; items.push({ k: x + (a + b) / 2 + .15, draw: () => { box(x - .07, a, .14, b - a, LOW, cream); faceX(x + .07, a, b, 0, 8, stripe); } }); } };
+  const run = (y, stripeOf) => { let x = 0; for (const d of [4, 11.5, 18.5]) { segX(y, x, d - .8, stripeOf(x)); x = d + .8; } segX(y, x, WORLD.w, stripeOf(x)); };
+  run(7, () => '#e0d2bf');
+  run(11, (x) => shade(ROOMS[zoneAt(x + .1, 11.5)].tone, .55));
+  segY(8, 0, 7, shade(ROOMS.dev.tone, .55)); segY(15, 0, 7, shade(ROOMS.server.tone, .55));
+  segY(8, 11, 18, shade(ROOMS.meeting.tone, .55)); segY(15, 11, 18, shade(ROOMS.rest.tone, .55));
+  // 문틀 기둥
+  for (const y of [7, 11]) for (const d of [4, 11.5, 18.5]) for (const s of [-.8, .8]) { const x = d + s; items.push({ k: x + y + .2, draw: () => box(x - .09, y - .09, .18, .18, LOW + 6, '#e6dccd') }); }
+}
+
+// ───────── 사람 그리기 ─────────
+const OUT = 'rgba(50,35,50,.38)';
+function drawPerson(a, t) {
+  const L = PEOPLE[a.kind];
+  const [sx, sy] = P(a.x, a.y);
+  const walk = a.walking, ph = t * 11 + a.seed;
+  const bob = walk ? Math.abs(Math.sin(ph)) * 2.2 : a.mood === 'work' ? Math.abs(Math.sin(t * 7 + a.seed)) * 1 : 0;
+  const shake = a.shakeUntil > performance.now() ? Math.sin(t * 60) * 1.2 : 0;
+  ctx.save(); ctx.translate(sx + shake, sy); ctx.scale(1.3, 1.3);
+  if (!a.avatar && a.x < 1.2) ctx.globalAlpha = Math.max(0, Math.min(1, elevOpen * 1.4, (a.x - .2) * 1.6 + elevOpen));
+  ellipse(0, 0, 10, 4.2, 'rgba(30,35,60,.16)');
+  const sw = walk ? Math.sin(ph) * 2.4 : 0;
+  rrect(-6, -12 - Math.max(0, sw), 5, 11, 2.5, '#3d4257'); rrect(1, -12 - Math.max(0, -sw), 5, 11, 2.5, '#3d4257');
+  const by = -28 - bob;
+  rrect(-11.5, by + 3 + sw * .6, 4.5, 11, 2.2, shade(L.body, -.12), OUT);
+  rrect(7, by + 3 - sw * .6, 4.5, 11, 2.2, shade(L.body, -.12), OUT);
+  rrect(-8.5, by, 17, 18, 7.5, L.body, OUT);
+  if (L.apron) { rrect(-6, by + 5, 12, 13, 3, L.apron, OUT); rrect(-2.5, by + 9, 5, 3, 1, shade(L.apron, -.15)); } // 앞치마
+  if (L.mark) { ctx.fillStyle = '#fff'; ctx.font = '700 8px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(L.mark, 0, by + 11); }
+  const hy = by - 11;
+  if (L.long) { rrect(-14, hy - 6, 28, 26, 11, L.hair); rrect(-15, hy + 8, 7, 12, 3.5, shade(L.hair, .06)); rrect(8, hy + 8, 7, 12, 3.5, shade(L.hair, .06)); } // 어깨까지 오는 머리
+  if (L.skirt) { ctx.beginPath(); ctx.moveTo(-8, by + 14); ctx.lineTo(8, by + 14); ctx.lineTo(10, by + 22); ctx.lineTo(-10, by + 22); ctx.closePath(); ctx.fillStyle = L.skirt; ctx.fill(); }
+  if (L.lady) { ctx.beginPath(); ctx.moveTo(-3.5, by + .5); ctx.lineTo(3.5, by + .5); ctx.lineTo(0, by + 7); ctx.closePath(); ctx.fillStyle = '#ffffff'; ctx.fill(); circle(0, by + 9, 1.3, '#ffd34d'); } // 블라우스 깃 · 브로치
+  circle(0, hy, 12.5, '#ffd9ba', OUT);
+  ctx.beginPath(); ctx.arc(0, hy - 1, 13, Math.PI * 1.03, Math.PI * 1.97); ctx.quadraticCurveTo(4, hy - 6, -2, hy - 5); ctx.quadraticCurveTo(-8, hy - 5, -12.8, hy - 2); ctx.closePath(); ctx.fillStyle = L.hair; ctx.fill();
+  rrect(-13, hy - 5, 4, 8, 2, L.hair); rrect(9, hy - 5, 4, 8, 2, L.hair);
+  if (L.pin) { rrect(5, hy - 11, 7, 3, 1.5, L.pin, OUT); circle(11, hy - 9.5, 2, '#ff8fa8', OUT); }
+  if (L.ahoge) { ctx.strokeStyle = L.hair; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(0, hy - 13); ctx.quadraticCurveTo(5, hy - 20, 1, hy - 23); ctx.stroke(); }
+  if (L.headset) { ctx.strokeStyle = '#3a4252'; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(0, hy - 1, 14, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke(); rrect(-16, hy - 3, 5, 9, 2.5, L.headset, OUT); rrect(11, hy - 3, 5, 9, 2.5, L.headset, OUT); ctx.strokeStyle = '#3a4252'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(-13.5, hy + 5); ctx.quadraticCurveTo(-11, hy + 10, -5, hy + 9.5); ctx.stroke(); circle(-5, hy + 9.5, 1.6, '#3a4252'); }
+  if (L.cap) { ctx.beginPath(); ctx.arc(0, hy - 2.5, 13.2, Math.PI, 0); ctx.closePath(); ctx.fillStyle = L.cap; ctx.fill(); rrect(-14, hy - 5, 9, 3.5, 1.6, shade(L.cap, -.15)); circle(0, hy - 10, 2.2, '#ffd25a'); }
+  if (L.hat) { ctx.beginPath(); ctx.arc(0, hy - 3, 13.5, Math.PI, 0); ctx.closePath(); ctx.fillStyle = L.hat; ctx.fill(); rrect(-2, hy - 5, 18, 4, 2, shade(L.hat, -.12)); }
+  const bt = t * 1.3 + a.seed, blink = Math.floor(bt) % 5 === 0 && bt % 1 < .12;
+  if (blink) { ctx.fillStyle = '#2b2232'; ctx.fillRect(-6.4, hy + 2, 4, 1.3); ctx.fillRect(2.4, hy + 2, 4, 1.3); }
+  else { ellipse(-4.4, hy + 2.2, 1.9, 2.5, '#2b2232'); ellipse(4.4, hy + 2.2, 1.9, 2.5, '#2b2232'); circle(-3.8, hy + 1.3, .7, '#fff'); circle(5, hy + 1.3, .7, '#fff'); }
+  if (L.lady && !blink) { ctx.strokeStyle = '#2b2232'; ctx.lineWidth = 1; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(-6.4, hy + .6); ctx.lineTo(-7.6, hy - .4); ctx.moveTo(6.4, hy + .6); ctx.lineTo(7.6, hy - .4); ctx.stroke(); } // 속눈썹
+  ellipse(-7.4, hy + 6, 2.3, 1.4, L.lady ? 'rgba(255,110,140,.55)' : 'rgba(255,128,128,.45)'); ellipse(7.4, hy + 6, 2.3, 1.4, L.lady ? 'rgba(255,110,140,.55)' : 'rgba(255,128,128,.45)');
+  ctx.strokeStyle = L.lady ? '#d9466a' : '#7a4b38'; ctx.lineWidth = L.lady ? 1.6 : 1.2; ctx.lineCap = 'round'; ctx.beginPath();
+  if (a.mood === 'think') { ctx.moveTo(-1.6, hy + 7); ctx.lineTo(1.6, hy + 7); ctx.stroke(); rrect(6, hy + 5, 5.5, 5.5, 2.6, '#ffd9ba', OUT); }
+  else if (a.mood === 'sweat') { ctx.arc(0, hy + 8, 2, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke(); }
+  else { ctx.arc(0, hy + 5.5, 2.2, .15 * Math.PI, .85 * Math.PI); ctx.stroke(); }
+  if (L.glasses) { ctx.strokeStyle = '#2b2232'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.arc(-4.4, hy + 2.2, 3.7, 0, 7); ctx.moveTo(8.1, hy + 2.2); ctx.arc(4.4, hy + 2.2, 3.7, 0, 7); ctx.moveTo(-.7, hy + 2.2); ctx.lineTo(.7, hy + 2.2); ctx.stroke(); }
+  if (a.mood === 'sweat') { ctx.beginPath(); const dx = 13, dy = hy - 6 + ((t * 20) % 6); ctx.moveTo(dx, dy - 4); ctx.quadraticCurveTo(dx + 3.5, dy + 1, dx, dy + 2.5); ctx.quadraticCurveTo(dx - 3.5, dy + 1, dx, dy - 4); ctx.fillStyle = '#6cb6ff'; ctx.fill(); }
+  if (a.badge === 'phone') rrect(-16, by - 1, 6, 10, 2, '#2b2f3a');
+  if (a.badge === 'coffee') { rrect(9, by + 5, 7, 7, 1.5, '#ffffff', OUT); rrect(9.5, by + 5.5, 6, 2, 1, '#9a6a45'); }
+  if (a.badge === 'ask') { ctx.fillStyle = '#f0a020'; ctx.font = '15px Jua,sans-serif'; ctx.textAlign = 'center'; ctx.fillText('?', 15, hy - 12 - Math.abs(Math.sin(t * 5)) * 3); }
+  ctx.restore();
+}
+const AVATAR = {};
+function avatar(kind) {
+  if (AVATAR[kind]) return AVATAR[kind];
+  const c = document.createElement('canvas'); c.width = c.height = 88;
+  const keep = ctx; ctx = c.getContext('2d');
+  ctx.translate(44, 108);
+  drawPerson({ kind, x: 0, y: 0, walking: false, mood: '', seed: .3, shakeUntil: 0, badge: '', avatar: true }, 0);
+  ctx = keep;
+  return (AVATAR[kind] = c.toDataURL());
+}
+
+// ───────── 사람(배우) ─────────
+class Actor {
+  constructor(kind, x, y) {
+    this.kind = pkey(kind); this.x = x; this.y = y; this.path = []; this.walking = false; this.mood = ''; this.badge = '';
+    this.seed = Math.random() * 10; this.res = null; this.shakeUntil = 0;
+    this.nm = document.createElement('div'); this.nm.className = 'nm'; this.nm.style.borderBottomColor = PEOPLE[this.kind].dot;
+    this.bub = document.createElement('div'); this.bub.className = 'bub'; this.bub.hidden = true;
+    ov.append(this.nm, this.bub);
+  }
+  setName(main, sub) { this.nm.innerHTML = `${esc(main)}${sub ? ` <em>${esc(sub)}</em>` : ''}`; }
+  walk(pts) {
+    if (this.res) { const r = this.res; this.res = null; r(false); }
+    this.path = pts.map(p => Array.isArray(p) ? { x: p[0], y: p[1] } : p); this.walking = this.path.length > 0;
+    return new Promise(r => { if (!this.walking) r(true); else this.res = r; });
+  }
+  goto(t) { return this.walk(route(this, t)); }
+  update(dt) {
+    if (!this.walking) return;
+    let left = 3.4 * dt;
+    while (left > 0 && this.path.length) {
+      const p = this.path[0], dx = p.x - this.x, dy = p.y - this.y, d = Math.hypot(dx, dy);
+      if (d <= left) { this.x = p.x; this.y = p.y; this.path.shift(); left -= d; }
+      else { this.x += dx / d * left; this.y += dy / d * left; left = 0; }
+    }
+    if (!this.path.length) { this.walking = false; const r = this.res; this.res = null; if (r) r(true); }
+  }
+  say(kind, label, text, ms) {
+    clearTimeout(this.bt);
+    if (!text && !label) { this.bub.hidden = true; return; }
+    this.bub.className = 'bub ' + (kind || '');
+    this.bub.innerHTML = (label ? `<span class="k">${esc(label)}</span>` : '') + esc(text || '');
+    this.bub.hidden = false; this.bub.style.animation = 'none'; void this.bub.offsetWidth; this.bub.style.animation = '';
+    if (ms) this.bt = setTimeout(() => { this.bub.hidden = true; }, ms);
+  }
+  place() {
+    const v = this.away || (view === 'office' ? !!this.scene : this.scene !== view) ? 'hidden' : ''; this.nm.style.visibility = v; this.bub.style.visibility = v; // 대표실에 올라가 있거나 다른 화면 사람이면 숨김
+    const [fx, fy] = toScreen(this.x, this.y), [hx, hy] = toScreen(this.x, this.y, 84);
+    this.nm.style.left = fx + 'px'; this.nm.style.top = (fy + 6 * cam.z) + 'px';
+    this.nm.style.scale = Math.max(.75, Math.min(1.1, cam.z));
+    this.nm.style.opacity = this.x < 1.2 ? Math.min(1, elevOpen * 1.4 + (this.x - .2)) : 1;
+    this.bub.style.left = hx + 'px'; this.bub.style.top = (hy - 6) + 'px';
+  }
+  remove() { if (this.res) { const r = this.res; this.res = null; r(false); } this.nm.remove(); this.bub.remove(); }
+}
+
+// ───────── 길 찾기 ─────────
+const pt = (x, y, room) => ({ x, y, room });
+const zoneOf = (p) => zoneAt(p.x, p.y) || 'corridor';
+function doorOf(id) { const r = ROOMS[id], top = r.y < 5; return { x: DOORS[id], inY: top ? r.y + r.h - .5 : r.y + .5 }; }
+const behindDev = (p) => zoneOf(p) === 'dev' && p.y < DEV_BACK;
+function route(from, target) {
+  const pts = [], fz = zoneOf(from), tz = ROOMS[target.room] ? target.room : 'corridor';
+  if (fz === tz && fz !== 'corridor') {
+    if (fz === 'dev' && (behindDev(from) || behindDev(target)) && Math.abs(from.y - target.y) > .1) { if (behindDev(from)) pts.push(pt(DEV_AISLE, from.y)); if (behindDev(target)) pts.push(pt(DEV_AISLE, target.y)); }
+    pts.push(target); return pts;
+  }
+  if (fz !== 'corridor') { if (behindDev(from)) pts.push(pt(DEV_AISLE, from.y)); const d = doorOf(fz); pts.push(pt(d.x, d.inY), pt(d.x, LANE)); }
+  else if (Math.abs(from.y - LANE) > .15) pts.push(pt(from.x, LANE));
+  if (tz !== 'corridor') { const d = doorOf(tz); pts.push(pt(d.x, LANE), pt(d.x, d.inY)); if (behindDev(target)) pts.push(pt(DEV_AISLE, target.y)); }
+  else pts.push(pt(target.x, LANE));
+  pts.push(target);
+  return pts;
+}
+function spotFor(room, idx, kind = 'claude') {
+  const H = HOME[kind] || HOME.claude;
+  if (room === 'report') return pt(H.report[0], H.report[1], 'dev');
+  if (room === 'desk' || room === 'phone' || (room === 'dev' && idx == null)) return pt(H.spot[0], H.spot[1], 'dev');
+  if (room === 'boss') return pt(SPOTS.elevOut[0] + (kind === 'codex' ? .5 : 0), SPOTS.elevOut[1], 'lobby'); // 질문 → 엘리베이터 타고 대표실로
+  if (room === 'lobby') return pt(13.6 + ((idx || 0) % 4) * .8, 9.25, 'lobby');
+  const r = ROOMS[room]; if (!r) return spotFor('desk', null, kind);
+  const kOff = kind === 'codex' ? -1.3 : 0;
+  if (idx == null) return pt(Math.max(r.x + .6, r.spot[0] + kOff), r.spot[1], room);
+  const base = r.agent || r.spot, off = AG_OFF[idx % AG_OFF.length] + (room === 'dev' ? 0 : .9);
+  const x = Math.max(r.x + .6, Math.min(r.x + r.w - .6, base[0] + off));
+  return pt(room === 'dev' ? Math.min(x, 10.6) : x, base[1], room);
+}
+
+// ───────── 장면: 한 층 = 한 사무실, 그 층에서 일하는 Claude·Codex 가 같이 출근 ─────────
+let scene = null, busy = new Set(), elevOpen = 0, elevTarget = 0;
+const ROOM_KO = { library: '자료실', dev: '개발실', server: '서버실', web: '정보검색실', meeting: '회의실', boss: '대표실', rest: '휴게실', phone: '자기 책상', desk: '자기 책상' };
+const fmtTool = (t, d) => t ? (d ? `${t} · ${d}` : t) : '';
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const signs = Object.entries(ROOMS).map(([id, r]) => { const el = document.createElement('div'); el.className = 'sign'; el.innerHTML = `<b style="background:${r.tone}">${r.name}</b><span>${r.what}</span>`; ov.appendChild(el); return { id, el }; });
+function placeSigns() {
+  for (const { el } of signs) el.style.display = view !== 'office' ? 'none' : '';
+  if (view !== 'office') return;
+  for (const { id, el } of signs) {
+    const r = ROOMS[id], top = r.y < 5;
+    const [sx, sy] = top ? toScreen(r.x + r.w / 2, -.3, WALL + 8) : toScreen(r.x + r.w / 2, WORLD.h + ISLE, -SOIL * .45);
+    el.style.left = sx + 'px'; el.style.top = sy + 'px';
+    el.classList.toggle('plate', !top);
+    el.classList.toggle('on', busy.has(id));
+  }
+}
+const primary = () => scene && scene.workers.get(scene.primary);
+function allActors() { if (!scene) return []; const a = scene.me ? [scene.me] : []; for (const W of scene.workers.values()) { a.push(W.actor); W.agents.forEach(x => a.push(x.actor)); } return a; }
+function freeIdx(extra) {
+  const used = new Set(); const ws = scene ? [...scene.workers.values()] : []; if (extra) ws.push(extra);
+  for (const W of ws) W.agents.forEach(a => used.add(a.idx));
+  let i = 0; while (used.has(i)) i++; return i;
+}
+function removeWorker(W) { W.gone = true; W.actor.remove(); W.agents.forEach(a => a.actor.remove()); }
+function clearScene() { if (!scene) return; scene.workers.forEach(removeWorker); if (scene.me) dropVisitor(); }
+
+function makeWorker(sess) {
+  const kind = sess.agent === 'codex' ? 'codex' : 'claude';
+  const st = sess.state || { room: 'desk', agents: [], board: [], idle: true };
+  const W = { key: sess.key, kind, agents: new Map(), lastEv: st.idle ? 0 : Date.now(), board: st.board || [],
+    status: st.status, tools: sess.tools || 0, started: sess.started || sess.mtime, lastTool: fmtTool(st.tool, st.detail) || st.statusLabel, label: sess.label };
+  const sp = spotFor(st.idle ? 'rest' : (st.room || 'desk'), null, kind);
+  W.actor = new Actor(kind, sp.x, sp.y); nameActor(W);
+  // 답 기다리는 중이면 대표실에 올라가 있는 상태로
+  if (sess.waiting) { W.actor.x = SPOTS.elevIn[0]; W.actor.y = SPOTS.elevIn[1]; W.actor.away = true; W.upstairs = true; W.actor.badge = 'ask'; }
+  if (!st.idle) { W.actor.mood = st.mood || ''; if (st.mood === 'think' && st.bubble) W.actor.say('think', '고민 중…', st.bubble.text, 6000); }
+  else W.actor.badge = 'coffee';
+  for (const a of st.agents || []) {
+    const idx = freeIdx(W), s = spotFor(a.room === 'lobby' ? 'lobby' : a.room, idx, kind);
+    const act = new Actor(a.type, s.x, s.y); act.setName(plabel(a.type), a.desc);
+    if (a.tool) act.mood = 'work';
+    W.agents.set(a.id, { actor: act, info: a, idx, leaving: false, tools: a.tools || 0, since: a.since || Date.now(), last: fmtTool(a.tool, a.detail) });
+  }
+  return W;
+}
+function buildScene(sess) {
+  clearScene();
+  scene = { primary: sess.key, floor: sess.floor.n, workers: new Map(), ringUntil: 0, logs: 0 };
+  scene.me = null; // 사용자는 각 층이 아니라 대표실에 있음
+  scene.workers.set(sess.key, makeWorker(sess));
+  syncCompanion();
+  $('#alog').innerHTML = '<div class="none">아직 기록이 없어요. 이 층에서 Codex가 움직이면 여기에 쌓여요.</div>';
+  renderCrew();
+}
+// 같은 층에서 다른 쪽(Claude↔Codex)이 최근에 일하고 있으면 같이 출근시킴
+function syncCompanion() {
+  if (!scene || !SNAP) return;
+  const P = primary(); if (!P) return;
+  const f = SNAP.floors.find(x => x.sessions.some(s => s.key === scene.primary)); if (!f) return;
+  const mate = f.sessions.filter(s => s.key !== scene.primary && s.state && (s.agent === 'codex' ? 'codex' : 'claude') !== P.kind).sort((a, b) => b.mtime - a.mtime)[0];
+  for (const [k, W] of scene.workers) if (k !== scene.primary && (!mate || k !== mate.key)) { removeWorker(W); scene.workers.delete(k); }
+  if (mate && !scene.workers.has(mate.key)) scene.workers.set(mate.key, makeWorker(mate));
+  renderCrew();
+}
+
+async function spawnAgent(W, e) {
+  if (W.agents.has(e.id)) return;
+  const idx = freeIdx();
+  const act = new Actor(e.type, SPOTS.elevIn[0], SPOTS.elevIn[1]); act.setName(plabel(e.type), e.desc);
+  const A = { actor: act, info: e, idx, leaving: false, pending: null, arriving: true, tools: 0, since: Date.now(), last: '출근하는 중' };
+  W.agents.set(e.id, A); renderCrew();
+  elevTarget = 1; await sleep(650); if (W.gone) return;
+  act.say('', '', e.type === 'Guardian' ? '검토하러 왔어요!' : '출근했습니다!', 1800);
+  await act.walk([SPOTS.elevOut]);
+  A.arriving = false; setTimeout(() => { elevTarget = 0; }, 300);
+  if (W.gone || A.leaving) return;
+  if (A.doneQueued) return agentDone(W, e.id);
+  if (A.pending) { const p = A.pending; A.pending = null; agentTool(W, e.id, p, true); }
+  else await act.goto(spotFor('lobby', idx, W.kind));
+}
+async function agentTool(W, id, e, replay) {
+  const A = W.agents.get(id); if (!A) return;
+  if (!replay) { A.tools++; A.last = fmtTool(e.tool, e.detail); }
+  if (A.arriving) { A.pending = e; return; }
+  if (A.leaving) { A.leaving = false; A.actor.say('', '', '앗, 일이 하나 더!', 1500); }
+  A.actor.mood = 'work';
+  A.actor.say('', e.tool, e.detail || ROOM_KO[e.room], 2600);
+  await A.actor.goto(spotFor(e.room, A.idx, W.kind));
+}
+async function agentDone(W, id) {
+  const A = W.agents.get(id); if (!A) return;
+  if (A.arriving) { A.doneQueued = true; return; }
+  A.leaving = true; A.actor.mood = ''; A.last = '보고하러 가는 중';
+  const ok = () => A.leaving && !W.gone;
+  if (!await A.actor.goto(spotFor('report', null, W.kind)) || !ok()) return;
+  A.actor.say('report', '보고', A.info.type === 'Guardian' ? '검토 작업이 끝났어요.' : '끝났어요. 결과 드릴게요!', 1700);
+  W.actor.say('', '', '수고했어요', 1600);
+  await sleep(1800); if (!ok()) return;
+  A.actor.say('', '', '👋 퇴근합니다!', 2200);
+  if (!await A.actor.walk(route(A.actor, pt(SPOTS.elevOut[0], SPOTS.elevOut[1], 'corridor'))) || !ok()) return;
+  elevTarget = 1; await sleep(600); if (!ok()) return;
+  if (!await A.actor.walk([SPOTS.elevIn]) || !ok()) return;
+  elevTarget = 0; await sleep(500); if (!ok()) return;
+  A.actor.remove(); W.agents.delete(id); renderCrew();
+}
+
+// ───────── 이벤트 ─────────
+// 질문하면 엘리베이터 타고 대표실로 올라가서 답을 기다림
+async function goUp(W) {
+  const c = W.actor, tok = W.upTok = (W.upTok || 0) + 1, ok = () => !W.gone && W.upTok === tok;
+  if (!await c.goto(spotFor('boss', null, W.kind)) || !ok()) return;
+  elevTarget = 1; await sleep(600); if (!ok()) return;
+  if (!await c.walk([SPOTS.elevIn]) || !ok()) return;
+  c.away = true; W.upstairs = true; elevTarget = 0; renderCrew();
+}
+// 대표님이 이 층에 와 있으면 대표실 대신 대표님 옆으로 와서 보고 (질문 · 답변 대기)
+function reportToMe(W, text) {
+  const me = scene && scene.me; if (!me) return goUp(W);
+  const i = [...scene.workers.values()].filter(x => x.actor.badge === 'ask' && x !== W).length;
+  W.actor.badge = 'ask';
+  W.actor.goto(pt(me.x + .9 + i * .8, me.y + .1, 'lobby')).then(ok => {
+    if (!ok) return;
+    W.actor.say('report', '대표님!', text || '여기 확인 부탁드려요 🙋', 4000);
+    setTimeout(() => { if (scene && scene.me === me) me.say('user', '', '어디 봐요 👀', 2200); }, 1200);
+  });
+}
+function comeDown(W) {
+  const c = W.actor; W.upTok = (W.upTok || 0) + 1; W.upstairs = false;
+  if (c.away) { c.away = false; c.x = SPOTS.elevIn[0]; c.y = SPOTS.elevIn[1]; elevTarget = 1; setTimeout(() => { elevTarget = 0; }, 1200); }
+}
+
+// 알림 — 다른 창을 보고 있을 때 질문·에러가 오면 탭 제목이 깜빡이고 '띵' 소리 (이 탭으로 돌아오면 멈춤)
+let TITLE = document.title, alertT = null;
+function notify(msg) {
+  if (!document.hidden && document.hasFocus()) return; // 다른 탭·다른 앱을 보고 있을 때만
+  clearInterval(alertT); let on = false;
+  alertT = setInterval(() => { on = !on; document.title = on ? msg : TITLE; }, 900);
+  try { const a = new AudioContext(), o = a.createOscillator(), g = a.createGain(); o.frequency.value = 880; g.gain.setValueAtTime(.08, a.currentTime); g.gain.exponentialRampToValueAtTime(.001, a.currentTime + .5); o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + .5); } catch { }
+}
+const stopAlert = () => { if (!document.hidden && document.hasFocus()) { clearInterval(alertT); document.title = TITLE; } };
+document.addEventListener('visibilitychange', stopAlert); window.addEventListener('focus', stopAlert);
+const floorAlert = new Map(); // 층(proj) → 'ask' | 'err'
+const alertInfo = new Map();  // 층(proj) → { who, text, at } — 대표실 결재함에 보여줌
+function onEv(e) {
+  const kind = (e.k === 'tool' && e.room === 'boss') || (e.k === 'status' && /^waiting_/.test(e.status)) ? 'ask' : e.k === 'error' ? 'err' : null;
+  if (kind && SNAP) {
+    const s = allSessions().find(x => x.key === e.session);
+    if (s) {
+      const who = staff(s.agent === 'codex' ? 'codex' : 'claude', s.floor.proj);
+      floorAlert.set(s.floor.proj, kind); alertInfo.set(s.floor.proj, { who, status: e.status, text: kind === 'ask' ? (e.detail || e.text) : e.text, at: Date.now() }); renderDir();
+      notify(kind === 'ask' ? `🙋 ${fno(s.floor.n)} ${who} ${e.status === 'waiting_approval' ? '승인 대기' : '질문 있어요'}` : `⚠ ${fno(s.floor.n)} ${who} 에러`);
+    }
+  }
+  else if ((/^(user|tool|think)$/.test(e.k) || (e.k === 'status' && !/^waiting_/.test(e.status))) && SNAP) { // 질문에 답해서 다시 일하기 시작하면 '질문' 불은 꺼짐 (에러는 눌러서 끔)
+    const s = allSessions().find(x => x.key === e.session);
+    if (s && floorAlert.has(s.floor.proj)) { floorAlert.delete(s.floor.proj); renderDir(); }
+  }
+  if (!scene) return;
+  const W = scene.workers.get(e.session);
+  if (!W) { pingFloor(e.session); return; }
+
+  const c = W.actor;
+  weatherOn(e);
+  if (W.upstairs && (/^(tool|think|user|error)$/.test(e.k) || (e.k === 'status' && !/^waiting_/.test(e.status))) && e.room !== 'boss') comeDown(W); // 답을 받고 다시 일하러 내려옴
+  W.lastEv = Date.now(); c.badge = '';
+  logLine(W, e);
+  switch (e.k) {
+    case 'status': {
+      W.status = e.status;
+      if (/^waiting_/.test(e.status)) {
+        c.badge = 'ask'; c.mood = '';
+        if (!W.upstairs) { if (scene.me) reportToMe(W, e.text); else goUp(W); }
+      } else if (['completed','interrupted','failed','stale','unknown'].includes(e.status)) {
+        comeDown(W); c.badge = ''; c.mood = e.status === 'failed' ? 'sweat' : '';
+        W.lastTool = e.text; c.say('', '', e.text, 4000); c.goto(spotFor('desk', null, W.kind));
+      }
+      break;
+    }
+    case 'tool': {
+      c.mood = 'work'; if (e.count !== false) W.tools++; W.lastTool = fmtTool(e.tool, e.detail);
+      if (e.room === 'phone') { if (W.kind === 'claude') scene.ringUntil = performance.now() + 2500; c.badge = 'phone'; c.say('', W.kind === 'claude' ? '에이전트 호출' : '도우미 호출', e.detail || '', 2500); }
+      else if (e.room === 'boss') { c.badge = 'ask'; if (scene.me) reportToMe(W, e.detail); else { c.say('', '대표실에 질문하러 가요', e.detail || '', 4000); goUp(W); } break; }
+      else c.say('', e.tool, e.detail || ROOM_KO[e.room] || '', 3000);
+      c.goto(spotFor(e.room, null, W.kind));
+      break;
+    }
+    case 'wait': if (!W.upstairs) { c.badge = 'ask'; if (scene.me) reportToMe(W); else { c.say('report', '다 했어요!', '대표실에서 답 기다릴게요', 3500); goUp(W); } } break;
+    case 'think': c.mood = 'think'; c.say('think', '고민 중…', e.text, 8000); break;
+    case 'say': c.mood = ''; c.say('', '', e.text, 6000); break;
+    case 'error': c.mood = 'sweat'; c.shakeUntil = performance.now() + 900; c.say('error', '실패', e.text, 5000); setTimeout(() => { if (c.mood === 'sweat') c.mood = ''; }, 5000); break;
+    case 'user': c.mood = ''; c.say('user', `${SNAP.user || '대표'}님 지시`, e.text, 6000); c.goto(spotFor('desk', null, W.kind)); break;
+    case 'spawn': spawnAgent(W, e); break;
+    case 'agentTool': agentTool(W, e.id, e); break;
+    case 'agentErr': { const A = W.agents.get(e.id); if (A) { A.actor.mood = 'sweat'; A.actor.shakeUntil = performance.now() + 900; A.actor.say('error', '실패', e.text, 3500); setTimeout(() => { A.actor.mood = 'work'; }, 3500); } break; }
+    case 'agentDone': agentDone(W, e.id); break;
+    case 'board': W.board = e.items || []; break;
+  }
+  renderCrew();
+}
+setInterval(() => {
+  if (!scene) return;
+  for (const W of scene.workers.values()) {
+    if (W.upstairs || W.actor.badge === 'ask') { // 대표실에서 답 기다리는 중 — 세션이 닫혔으면(서버가 대기를 지움) 내려와서 퇴근
+      const s = allSessions().find(x => x.key === W.key);
+      // 스냅샷이 늦게 올 수 있어서 6초 여유
+      if (s && !s.waiting && !W.actor.walking && Date.now() - W.lastEv > 6e3) { comeDown(W); W.actor.badge = ''; W.lastEv = 0; }
+      continue;
+    }
+    const c = W.actor, idle = Date.now() - W.lastEv, home = spotFor(idle > 120e3 ? 'rest' : 'desk', null, W.kind); // 2분 넘게 쉬면 휴게실로
+    if (idle > 25e3 && !c.walking && Math.hypot(c.x - home.x, c.y - home.y) > .3) { c.mood = ''; c.goto(home); }
+    if (idle > 120e3 && c.badge !== 'coffee') { c.badge = 'coffee'; c.mood = ''; }
+  }
+  renderCrew();
+}, 1000);
+
+// ───────── 근무표 · 업무 일지 ─────────
+const ago = (ms) => { const s = Math.max(0, (Date.now() - ms) / 1000); if (s < 60) return Math.floor(s) + '초'; if (s < 3600) return Math.floor(s / 60) + '분'; if (s < 86400) return Math.floor(s / 3600) + '시간'; return Math.floor(s / 86400) + '일'; };
+const agoTxt = (ms) => (Date.now() - ms) < 60e3 ? '방금' : ago(ms) + ' 전';
+function workerStatus(W) {
+  const current = allSessions().find(s => s.key === W.key);
+  if (current && current.state) {
+    const st = current.state;
+    const tone = ({ running:'work', thinking:'think', waiting_user:'think', waiting_approval:'think', completed:'rest', interrupted:'rest', failed:'sweat', error:'sweat', stale:'rest', unknown:'rest' })[st.status] || 'rest';
+    return [tone, st.statusLabel || '상태 기록 없음'];
+  }
+  const c = W.actor, idle = Date.now() - W.lastEv;
+  if (!W.upstairs && c.badge === 'ask' && scene.me) return ['think', '대표님께 보고 중'];
+  if (W.upstairs || c.badge === 'ask') return ['think', '대표실에서 답 기다리는 중'];
+  if (idle > 120e3) return ['rest', '쉬는 중'];
+  if (c.mood === 'think') return ['think', '고민 중'];
+  if (c.mood === 'sweat') return ['sweat', '진땀'];
+  if (idle > 25e3) return ['rest', '자리에서 대기'];
+  return ['work', '일하는 중'];
+}
+function renderCrew() {
+  if (view === 'ceo') return renderCeoCrew();
+  if (view === 'lobby') return renderLobbyCrew();
+  if (view === 'roof') return renderRoofCrew();
+  if (!scene) return;
+  let h = '';
+  const ws = [...scene.workers.values()].sort((a, b) => (b.key === scene.primary) - (a.key === scene.primary));
+  for (const W of ws) {
+    const [sc, st] = workerStatus(W);
+    h += `<div class="cr ${W.kind}" data-w="${esc(W.key)}"><img src="${avatar(W.kind)}" alt=""><div class="m"><div class="r1"><b>${esc(staff(W.kind))}</b><span class="st ${sc}">${st}</span></div>
+      <div class="r2">${esc(W.lastTool || '개발실 자기 자리')}</div><div class="r3">도구 ${W.tools}회 · ${ago(W.started)}째 근무${W.key !== scene.primary ? ' · 같은 층 다른 세션' : ''}</div></div></div>`;
+    for (const [id, A] of W.agents) {
+      const s = A.leaving ? ['report', '보고 중'] : A.info.status === 'stale' ? ['rest', '기록 갱신 대기'] : A.info.status === 'waiting_approval' ? ['think', '실행 승인 대기'] : A.info.status === 'waiting_user' ? ['think', '질문 응답 대기'] : A.actor.mood === 'sweat' ? ['sweat', '진땀'] : A.arriving ? ['rest', '출근 중'] : ['work', '일하는 중'];
+      h += `<div class="cr" data-w="${esc(W.key)}" data-a="${esc(id)}"><img src="${avatar(A.actor.kind)}" alt=""><div class="m"><div class="r1"><b>${esc(A.info.desc || plabel(A.info.type))}</b><span class="st ${s[0]}">${s[1]}</span></div>
+        <div class="r2">${esc(plabel(A.info.type))} · ${esc(A.last || '')}</div><div class="r3">${esc(staff(W.kind))} 팀 · 도구 ${A.tools}회 · ${ago(A.since)}째</div></div></div>`;
+    }
+  }
+  $('#crew').innerHTML = h;
+}
+$('#crew').addEventListener('click', (ev) => {
+  const lt = ev.target.closest('[data-ltab]'); if (lt) { lobbyTab = lt.dataset.ltab; showLobby(true); return; }
+  const g = ev.target.closest('[data-goto]'); if (g) { setView('office'); setFollow(false); if (g.dataset.goto !== curKey) switchTo(g.dataset.goto); return; }
+  const row = ev.target.closest('.cr'); if (!row || !scene) return;
+  const W = scene.workers.get(row.dataset.w); if (!W) return;
+  const a = row.dataset.a ? W.agents.get(row.dataset.a)?.actor : W.actor; if (!a) return;
+  const [sx, sy] = toScreen(a.x, a.y, 30); cam.x += CW / 2 - sx; cam.y += (CH - 60) / 2 - sy;
+});
+function logLine(W, e) {
+  let who = staff(W.kind), kind = W.kind, txt = '';
+  const ag = (id) => W.agents.get(id);
+  switch (e.k) {
+    case 'status': if (['running','thinking'].includes(e.status)) return; txt = e.text; break;
+    case 'tool': txt = `${ROOM_KO[e.room] || ''}에서 ${fmtTool(e.tool, e.detail)}`; break;
+    case 'think': txt = `💭 ${e.text}`; break;
+    case 'say': txt = e.text; break;
+    case 'error': txt = `⚠ ${e.text}`; break;
+    case 'wait': txt = '🛗 대표실에 올라가서 답을 기다려요'; break;
+    case 'user': who = `${SNAP.user || '나'} → ${staff(W.kind)}`; kind = 'me'; txt = e.text; break;
+    case 'spawn': who = e.desc || plabel(e.type); kind = pkey(e.type); txt = `${plabel(e.type)}${e.type === 'Guardian' || e.type === 'Helper' ? '' : ' 에이전트'}가 엘리베이터로 출근`; break;
+    case 'agentTool': { const A = ag(e.id); who = A ? (A.info.desc || plabel(A.info.type)) : '도우미'; kind = A ? A.actor.kind : 'other'; txt = `${ROOM_KO[e.room] || ''}에서 ${fmtTool(e.tool, e.detail)}`; break; }
+    case 'agentDone': { const A = ag(e.id); who = A ? (A.info.desc || plabel(A.info.type)) : '도우미'; kind = A ? A.actor.kind : 'other'; txt = '보고하고 퇴근'; break; }
+    default: return;
+  }
+  const box = $('#alog'); if (!scene.logs++) box.innerHTML = '';
+  const d = document.createElement('div'); d.className = 'al';
+  d.innerHTML = `<i style="background:${PEOPLE[kind].dot}"></i><div class="h"><b>${esc(who)}</b><time>${new Date(e.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}</time></div><p>${esc(txt)}</p>`;
+  box.prepend(d); while (box.children.length > 60) box.lastChild.remove();
+}
+
+// ───────── 건물 단면 (층) · 세션 고르기 ─────────
+function pingFloor(key) {
+  const b = document.querySelector(`#rail .win button[data-k="${CSS.escape(key)}"]`);
+  if (b) { b.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.6)' }, { transform: 'scale(1)' }], { duration: 500 }); }
+}
+// 층 정리 — 기록 파일은 그대로 두고 화면에서만 다시 묶음 (이 브라우저에만 기억)
+//   names: 층 이름 바꿈 / workers: 층별 Claude·Codex 이름 / merge: 층 → 합쳐 들어간 층 / moves: 세션 → 옮겨 간 층 ('new:…' 는 새로 만든 층)
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch { return d; } };
+const hidden = new Set(load('codexOffice.hiddenFloors', []));
+const layout = Object.assign({ names: {}, merge: {}, moves: {}, workers: {}, deco: {} }, load('codexOffice.layout', {}));
+const saveHidden = () => { try { localStorage.setItem('codexOffice.hiddenFloors', JSON.stringify([...hidden])); } catch { } };
+const saveLayout = () => { try { localStorage.setItem('codexOffice.layout', JSON.stringify(layout)); } catch { } };
+const rootOf = (k) => { const seen = new Set(); while (layout.merge[k] && !seen.has(k)) { seen.add(k); k = layout.merge[k]; } return k; };
+let RAW = null, ALL = [], hiddenN = 0;
+const homeOf = new Map(); // 세션 → 원래(합치기까지 반영한) 층
+function applySnap() { // 정리 규칙대로 층을 다시 묶고, 숨긴 층을 빼고, 층 번호를 다시 매김
+  const orig = new Map(RAW.floors.map(f => [f.proj, f.name])), G = new Map();
+  const g = (k) => G.get(k) || G.set(k, { proj: k, orig: orig.get(k) || '', parts: [], total: 0, sessions: [] }).get(k);
+  homeOf.clear();
+  for (const f of RAW.floors) {
+    const home = rootOf(f.proj), H = g(home);
+    if (home !== f.proj) H.parts.push(f.proj);
+    H.total += f.total;
+    for (const s of f.sessions) {
+      homeOf.set(s.key, home);
+      const to = layout.moves[s.key] ? rootOf(layout.moves[s.key]) : home;
+      if (to !== home) { H.total--; g(to).total++; }
+      g(to).sessions.push(s);
+    }
+  }
+  ALL = [...G.values()].filter(F => F.sessions.length).map(F => {
+    F.sessions.sort((a, b) => b.mtime - a.mtime);
+    return Object.assign(F, { name: layout.names[F.proj] || (F.proj === RAW.self ? '관리실' : F.orig) || (F.proj.startsWith('new:') ? '새 층' : F.proj.split('/').pop()), mtime: F.sessions[0].mtime, active: F.sessions.some(s => s.active) });
+  }).sort((a, b) => a.name.localeCompare(b.name) || a.proj.localeCompare(b.proj));
+  hiddenN = ALL.filter(F => hidden.has(F.proj)).length;
+  const vis = ALL.filter(F => !hidden.has(F.proj)), base = RAW.self && vis.find(F => F.proj === rootOf(RAW.self)); // 코덱스 오피스 폴더는 지하 1층 관리실
+  vis.filter(F => F !== base).forEach((F, i) => F.n = i + 2); if (base) base.n = -1; // 1층은 로비
+  SNAP = Object.assign({}, RAW, { floors: vis });
+  const s = allSessions().find(x => x.key === curKey);
+  if (s) curFloorN = s.floor.n; else { curKey = null; curFloorN = null; }
+}
+function relayout(leaving) { // 정리 규칙이 바뀐 뒤 화면 다시 맞춤
+  saveLayout(); saveHidden();
+  if (leaving) curKey = null; // 보고 있던 세션이 숨겨지면 다른 데로 옮겨감
+  applySnap(); onSnap();
+}
+let SNAP = null, curKey = null, follow = true, curFloorN = null;
+const fno = (n) => n < 0 ? 'B' + -n : n + 'F'; // 지하는 B1
+function allSessions() { return SNAP ? SNAP.floors.flatMap(f => f.sessions.map(s => Object.assign({ floor: f }, s))) : []; }
+function renderDir() {
+  const now = Date.now();
+  const card = (f) => {
+    const cur = f.n === curFloorN;
+    const win = f.sessions.slice(0, 10).map(s => `<button class="${s.active ? 'lit' : s.state ? 'warm' : ''} ${s.key === curKey ? 'cur' : ''} ${s.agent === 'codex' ? 'cx' : ''}" data-k="${esc(s.key)}" title="${s.agent === 'codex' ? 'Codex' : 'Claude'} · ${esc(s.label)} · ${agoTxt(s.mtime)}" aria-label="${esc(s.label)}"></button>`).join('');
+    const al = floorAlert.get(f.proj);
+    return `<div class="fl ${cur ? 'cur' : ''} ${now - f.mtime > 864e5 ? 'dim' : ''} ${al || ''}" data-n="${f.n}" tabindex="0"><button class="x" title="층 정리 (이름 · 합치기 · 세션 옮기기 · 숨기기)" aria-label="${esc(f.name)} 층 정리">⋯</button><span class="no jua">${fno(f.n)}</span><b>${esc(f.name)}${al ? `<span class="tag">${al === 'ask' ? ((alertInfo.get(f.proj) || {}).status === 'waiting_approval' ? '🙋 승인' : '🙋 질문') : '⚠ 에러'}</span>` : ''}</b>
+      <span class="sub">세션 ${f.total}개 · ${f.active ? '일하는 중' : esc(f.sessions[0]?.statusLabel || '상태 기록 없음')}</span><div class="win">${win}</div><span class="car"></span></div>`;
+  };
+  const busyN = SNAP.floors.filter(f => f.active).length;
+  const lobby = `<div class="fl lobby ${follow ? 'on' : ''} ${view === 'lobby' ? 'cur' : ''}" data-lobby tabindex="0" title="층별 안내판 보기"><span class="no jua">1F</span><b>로비</b>
+    <span class="sub">${busyN ? `${busyN}개 층 일하는 중` : '다들 쉬는 중'}</span><div class="door"><i></i>${(() => { const t = monthRank()[0]; return t ? `🏆 이달의 직원 ${esc(staff(t.kind, t.f.proj))}` : lobbyOpen ? '안내판 보는 중' : '누르면 층별 안내판'; })()}</div></div>`;
+  const resting = roofResting().length;
+  const roofg = `<div class="fl rf ${view === 'roof' ? 'cur' : ''}" data-rf tabindex="0" title="옥상정원 — 쉬는 직원들이 올라와 있어요"><span class="no jua">RF</span><b>옥상정원</b><span class="sub">${resting ? `🌿 ${resting}명 쉬는 중` : '🌿 조용한 정원'}</span></div>`;
+  const asks = SNAP.floors.filter(f => floorAlert.get(f.proj) === 'ask').length, errs = SNAP.floors.filter(f => floorAlert.get(f.proj) === 'err').length, waits = waitingList().length;
+  const ceo = `<div class="fl ceo ${asks ? 'ask' : errs ? 'err' : ''} ${view === 'ceo' ? 'cur' : ''}" data-ceo tabindex="0" title="대표실 — 직원들이 올린 질문·에러 모아 보기"><span class="no jua">대표</span><b>${esc(SNAP.user || '')} 대표실</b>
+    <span class="sub">${asks || errs || waits ? [asks && `🙋 질문 ${asks}`, errs && `⚠ 에러 ${errs}`, waits && `💬 답변 대기 ${waits}`].filter(Boolean).join(' · ') : '결재 대기 없음'}</span></div>`;
+  $('#stack').innerHTML = roofg + ceo + SNAP.floors.filter(f => f.n > 0).reverse().map(card).join('') + lobby;
+  if (lobbyOpen) renderLobby(); else if (bossOpen) renderBoss();
+  const base = SNAP.floors.filter(f => f.n < 0);
+  $('#base').innerHTML = base.map(card).join(''); $('#rail').classList.toggle('hasBase', !!base.length);
+  const ub = $('#unhide'); ub.hidden = !hiddenN; ub.textContent = `숨긴 층 ${hiddenN}개 되돌리기`;
+  const f = SNAP.floors.find(x => x.n === curFloorN), s = allSessions().find(x => x.key === curKey);
+  $('#tfl').textContent = view === 'ceo' ? '대표' : view === 'lobby' ? '1F' : view === 'roof' ? 'RF' : f ? fno(f.n) : '-';
+  $('#tname').textContent = view === 'ceo' ? `${SNAP.user || ''} 대표실` : view === 'lobby' ? '로비' : view === 'roof' ? '옥상정원' : f ? f.name : TITLE;
+  $('#sessBtn').style.display = view !== 'office' ? 'none' : '';
+  if (view === 'ceo') syncCeo();
+  if (view === 'roof') syncRoof();
+  $('#tsub').style.display = 'none'; // 세션 이름(긴 첫 질문)은 안 보여줌 — 세션 ▾ 목록에서 볼 수 있음
+  $('#sessBtn').textContent = f ? `세션 ${f.total}개 ▾` : '세션 ▾';
+  $('#mproj').textContent = s && s.cwd ? s.cwd.replace(/^\/(Users|home)\/[^/]+/, '~') : (f ? f.proj : '-');
+  $('#msess').textContent = s ? s.sid.slice(0, 8) : '-';
+  if ($('#pop').classList.contains('open')) renderPop();
+  const empty = !SNAP.floors.length;
+  if (empty && ALL.length) { $('#empty').style.display = 'flex'; $('#empty').innerHTML = '층을 모두 숨겼어요.<br>왼쪽 아래 「숨긴 층 되돌리기」로 다시 꺼낼 수 있어요.'; return; }
+  $('#empty').style.display = empty ? 'flex' : 'none';
+  if (empty) $('#empty').innerHTML = `아직 빌딩이 비어 있어요.<br>터미널에서 claude를 한 번 실행하면 1층이 생겨요.<br><small>${esc(SNAP.root)}</small>`;
+}
+function renderPop() {
+  const f = SNAP.floors.find(x => x.n === curFloorN); if (!f) return;
+  $('#pop').innerHTML = `<label><input type="checkbox" id="fol" ${follow ? 'checked' : ''}>지금 일하는 세션 자동으로 따라가기</label>` +
+    f.sessions.map(s => `<div class="ss ${s.key === curKey ? 'cur' : ''}" role="menuitem" tabindex="0" data-k="${esc(s.key)}"><span class="who ${s.agent === 'codex' ? 'cx' : ''}">${s.agent === 'codex' ? 'Codex' : 'Claude'}</span><span class="t">${esc(s.label)}</span><span class="w">${esc(s.statusLabel || '')}</span></div>`).join('');
+  $('#fol').onchange = (e) => setFollow(e.target.checked);
+}
+function closePop() { $('#pop').classList.remove('open'); $('#sessBtn').setAttribute('aria-expanded', 'false'); }
+$('#sessBtn').onclick = (e) => { e.stopPropagation(); const p = $('#pop'); const open = !p.classList.contains('open'); p.classList.toggle('open', open); $('#sessBtn').setAttribute('aria-expanded', open); if (open) renderPop(); };
+document.addEventListener('click', (e) => { if (!e.target.closest('#pop') && !e.target.closest('#sessBtn')) closePop(); });
+$('#pop').addEventListener('click', (e) => { const ss = e.target.closest('.ss'); if (ss) { setFollow(false); switchTo(ss.dataset.k); closePop(); } });
+$('#pop').addEventListener('keydown', (e) => { if (e.key === 'Enter') { const ss = e.target.closest('.ss'); if (ss) ss.click(); } if (e.key === 'Escape') closePop(); });
+$('#unhide').onclick = () => { hidden.clear(); relayout(); };
+$('#rail').addEventListener('click', (ev) => {
+  const x = ev.target.closest('.x');
+  if (x) { const f = SNAP.floors.find(y => y.n === +x.closest('.fl').dataset.n); if (f) openTidy(f.proj); return; }
+  const w = ev.target.closest('.win button'); if (w) { showLobby(false); setFollow(false); const go = view !== 'office' || !scene || !scene.workers.has(w.dataset.k); if (view !== 'office') setView('office'); switchTo(w.dataset.k).then(() => { if (go) visit('office'); }); return; }
+  const fl = ev.target.closest('.fl'); if (!fl) return;
+  if (fl.hasAttribute('data-ceo')) return setView(view === 'ceo' ? 'office' : 'ceo');
+  if (fl.hasAttribute('data-lobby')) { setView(view === 'lobby' ? 'office' : 'lobby'); return visit(view); }
+  if (fl.hasAttribute('data-rf')) { setView(view === 'roof' ? 'office' : 'roof'); return visit(view); }
+  const fromElsewhere = view !== 'office';
+  if (fromElsewhere) setView('office');
+  { const f = SNAP.floors.find(x => x.n === +fl.dataset.n); if (f && floorAlert.delete(f.proj)) renderDir(); } // 로비 = 층별 안내판
+  showLobby(false);
+  if (fl.dataset.n == curFloorN) { if (fromElsewhere || !scene.me) visit('office'); return; } // 보고 있던 층이어도 대표님이 내려옴
+  const f = SNAP.floors.find(x => x.n === +fl.dataset.n); if (f && f.sessions[0] && f.n !== curFloorN) { setFollow(false); switchTo(f.sessions[0].key).then(() => visit('office')); }
+});
+$('#rail').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && ev.target.classList.contains('fl')) ev.target.click(); });
+// ───────── 로비 안내판 ─────────
+let lobbyOpen = false;
+function showLobby(v) { lobbyOpen = v; bossOpen = false; $('#lobbyV').classList.toggle('open', v); renderDir(); }
+function renderLobby() {
+  const row = (f) => {
+    const on = f.sessions.filter(s => s.active), s = on[0] || f.sessions[0], st = s && s.state;
+    const doing = st ? (st.tool ? `${(ROOMS[st.room] || {}).name || ''} · ${st.tool}${st.detail ? ' ' + st.detail : ''}` : (st.idle ? '자리에서 쉬는 중' : '일하는 중')) : esc(s ? s.label : '');
+    const who = (on.length ? on : [s]).filter(Boolean).slice(0, 3).map(x => `<span class="who ${x.agent === 'codex' ? 'cx' : ''}">${esc(staff(x.agent === 'codex' ? 'codex' : 'claude', f.proj))}</span>`).join('');
+    return `<div class="rw ${f.active ? '' : 'idle'}" data-n="${f.n}" tabindex="0"><span class="no jua">${fno(f.n)}</span><b>${esc(f.name)}</b>
+      <span class="st ${f.active ? 'on' : ''}">${f.active ? '● 일하는 중' : agoTxt(f.mtime)}</span><span class="what">${who}<span>${st ? esc(doing) : doing}</span></span></div>`;
+  };
+  const up = SNAP.floors.filter(f => f.n > 0).reverse(), down = SNAP.floors.filter(f => f.n < 0);
+  const tabs = `<div class="tabs"><button data-tab="dir" class="${lobbyTab === 'dir' ? 'on' : ''}">층 안내</button><button data-tab="work" class="${lobbyTab === 'work' ? 'on' : ''}">출퇴근</button><button data-tab="star" class="${lobbyTab === 'star' ? 'on' : ''}">이달의 직원</button><button data-tab="day" class="${lobbyTab === 'day' ? 'on' : ''}">오늘 요약</button></div>`;
+  $('#board').innerHTML = `<header><h3 class="jua">로비 안내판</h3>${tabs}<label><input type="checkbox" id="lfol" ${follow ? 'checked' : ''}>자동 따라가기</label></header>
+    <div class="list">${lobbyTab === 'day' ? dayReport() : lobbyTab === 'star' ? starBoard() : lobbyTab === 'work' ? workBook([...up, ...down]) : up.map(row).join('') + (down.length ? '<div class="gap"></div>' + down.map(row).join('') : '')}</div>`;
+  $('#lfol').onchange = (e) => setFollow(e.target.checked);
+}
+// 하루 요약 리포트 — 서버가 보내는 세션별 '오늘 한 일'(day)과 출퇴근 칸(work)을 층별로 합침. AI 없이 기록만
+const TOOL_LAB = [['library', '📚 읽기·검색'], ['dev', '🛠 수정'], ['server', '🖥 명령'], ['web', '🌐 웹'], ['meeting', '📋 계획'], ['phone', '📞 에이전트'], ['boss', '🙋 질문']];
+function dayData() {
+  return (SNAP ? SNAP.floors : []).map(f => {
+    const ss = f.sessions.filter(s => s.day || (s.work || []).length); if (!ss.length) return null;
+    const tools = {}, files = new Set(), prompts = []; let errors = 0;
+    for (const s of ss) if (s.day) { for (const [k, n] of Object.entries(s.day.tools)) tools[k] = (tools[k] || 0) + n; s.day.files.forEach(x => files.add(x)); prompts.push(...s.day.prompts); errors += s.day.errors; }
+    const b = [...new Set(ss.flatMap(s => s.work || []))].sort((x, y) => x - y);
+    return { f, tools, files: [...files], prompts, errors, mins: b.length * 5, from: b[0], to: b[b.length - 1], who: [...new Set(ss.map(s => staff(s.agent === 'codex' ? 'codex' : 'claude', f.proj)))] };
+  }).filter(Boolean).sort((a, b) => b.mins - a.mins);
+}
+const todayTxt = () => new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+function dayReport() {
+  const D = dayData();
+  if (!D.length) return '<p class="sum">오늘은 아직 한 일이 없어요 ☕</p>';
+  const sum = (k) => D.reduce((a, x) => a + (typeof k === 'function' ? k(x) : x[k]), 0);
+  const head = `<div class="rep-top"><b class="jua">📋 ${todayTxt()} 하루 요약</b><button class="copy" data-copy>복사하기</button>
+    <span>근무 <b>${dur(sum('mins'))}</b> · 일한 층 <b>${D.length}</b> · 시킨 일 <b>${sum(x => x.prompts.length)}</b> · 고친 파일 <b>${sum(x => x.files.length)}</b>${sum('errors') ? ` · ⚠ 에러 <b>${sum('errors')}</b>` : ''}</span></div>`;
+  return head + D.map(x => `<div class="rep" data-n="${x.f.n}">
+    <div class="rh"><span class="no jua">${fno(x.f.n)}</span><b>${esc(x.f.name)}</b><span class="st">${dur(x.mins)}${x.mins ? ` · ${hm(x.from)}~${hm(x.to + 1)}` : ''}</span></div>
+    <div class="tl">${esc(x.who.join(' · '))} ${TOOL_LAB.filter(([k]) => x.tools[k]).map(([k, l]) => `<i>${l} ${x.tools[k]}</i>`).join('')}${x.errors ? `<i class="e">⚠ 에러 ${x.errors}</i>` : ''}</div>
+    ${x.prompts.length ? `<ul>${x.prompts.slice(-5).map(p => `<li>${esc(p)}</li>`).join('')}</ul>` : ''}
+    ${x.files.length ? `<div class="files">${x.files.slice(-10).map(f => `<i>${esc(f)}</i>`).join('')}${x.files.length > 10 ? ` 외 ${x.files.length - 10}개` : ''}</div>` : ''}
+  </div>`).join('');
+}
+function dayMarkdown() { // 복사용 글
+  const D = dayData();
+  return [`# ${todayTxt()} 하루 요약 (${TITLE})`, '', ...D.flatMap(x => [
+    `## ${fno(x.f.n)} ${x.f.name} — ${dur(x.mins)}${x.mins ? ` (${hm(x.from)}~${hm(x.to + 1)})` : ''}`,
+    `- 직원: ${x.who.join(', ')}`,
+    `- 한 일: ${TOOL_LAB.filter(([k]) => x.tools[k]).map(([k, l]) => `${l.slice(2).trim()} ${x.tools[k]}번`).join(', ') || '-'}${x.errors ? `, 에러 ${x.errors}번` : ''}`,
+    ...(x.prompts.length ? ['- 시킨 일:', ...x.prompts.slice(-5).map(p => `  - ${p}`)] : []),
+    ...(x.files.length ? [`- 고친 파일: ${x.files.join(', ')}`] : []), ''])].join('\n');
+}
+
+// 이달의 직원 — 서버가 보내는 세션별 '이번 달 일한 분'(month)을 층 · Claude/Codex 별로 합쳐서 순위
+function monthRank() {
+  const m = new Map();
+  for (const f of SNAP ? SNAP.floors : []) for (const s of f.sessions) {
+    if (!s.month) continue;
+    const kind = s.agent === 'codex' ? 'codex' : 'claude', k = f.proj + '|' + kind;
+    const r = m.get(k) || m.set(k, { f, kind, min: 0 }).get(k); r.min += s.month;
+  }
+  return [...m.values()].sort((a, b) => b.min - a.min);
+}
+function starBoard() {
+  const r = monthRank(), mon = new Date().getMonth() + 1;
+  if (!r.length) return `<p class="sum">${mon}월엔 아직 일한 직원이 없어요 ☕</p>`;
+  const [top, ...rest] = r;
+  return `<div class="frame"><img src="${avatar(top.kind)}" alt=""><div><span>🏆 ${mon}월의 직원</span><b class="jua">${esc(staff(top.kind, top.f.proj))}</b>
+      <em>${fno(top.f.n)} ${esc(top.f.name)} · ${BRAND[top.kind]} · ${dur(top.min)}</em></div></div>
+    ${rest.slice(0, 4).map((x, i) => `<div class="rw" data-n="${x.f.n}" tabindex="0"><span class="no jua">${i + 2}위</span><b>${esc(staff(x.kind, x.f.proj))} · ${esc(x.f.name)}</b><span class="st">${dur(x.min)}</span></div>`).join('')}
+    <p class="sum" style="font-size:11px">이번 달 기록에 남은 시각을 5분 단위로 센 근무 시간이에요. 1일이 되면 새로 시작해요.</p>`;
+}
+// 출퇴근 기록부 — 서버가 보내는 세션별 '오늘 일한 5분 칸'(work)을 층별로 합쳐서 보여줌
+let lobbyTab = 'dir';
+const hm = (b) => `${String(Math.floor(b * 5 / 60)).padStart(2, '0')}:${String(b * 5 % 60).padStart(2, '0')}`;
+const dur = (m) => m >= 60 ? `${Math.floor(m / 60)}시간${m % 60 ? ' ' + m % 60 + '분' : ''}` : `${m}분`;
+function workBook(floors) {
+  const nowB = Math.floor((new Date().getHours() * 60 + new Date().getMinutes()) / 5);
+  let total = 0, off = 0;
+  const rows = floors.map(f => {
+    const all = new Set(f.sessions.flatMap(s => s.work || [])); if (!all.size) { off++; return ''; }
+    const b = [...all].sort((x, y) => x - y), mins = b.length * 5, last = b[b.length - 1]; total += mins;
+    const kinds = [...new Set(f.sessions.filter(s => (s.work || []).length).map(s => s.agent === 'codex' ? 'codex' : 'claude'))];
+    const who = kinds.map(k => `<span class="who ${k === 'codex' ? 'cx' : ''}">${esc(staff(k, f.proj))}</span>`).join('');
+    const working = f.active || nowB - last <= 1;
+    // 하루 막대: 0시~24시 중 일한 칸을 칠함
+    const bar = `<span class="day">${b.map(x => `<i style="left:${x / 288 * 100}%"></i>`).join('')}</span>`;
+    return `<div class="rw ${working ? '' : 'idle'}" data-n="${f.n}" tabindex="0"><span class="no jua">${fno(f.n)}</span><b>${esc(f.name)}</b>
+      <span class="st ${working ? 'on' : ''}">${dur(mins)}</span><span class="what">${who}<span>출근 ${hm(b[0])} · ${working ? '● 근무 중' : '퇴근 ' + hm(last + 1)}</span>${bar}</span></div>`;
+  }).join('');
+  return rows ? `<p class="sum">오늘 총 근무 <b>${dur(total)}</b>${off ? ` · 오늘 쉰 층 ${off}개` : ''}</p>${rows}`
+    : '<p class="sum">오늘은 아직 아무도 출근 안 했어요 ☕</p>';
+}
+$('#lobbyV').addEventListener('click', (e) => {
+  if (e.target.id === 'lobbyV') return showLobby(false);
+  const tb = e.target.closest('[data-tab]'); if (tb) { lobbyTab = tb.dataset.tab; return renderLobby(); }
+  const cp = e.target.closest('[data-copy]'); if (cp) { navigator.clipboard.writeText(dayMarkdown()).then(() => { cp.textContent = '복사했어요 ✓'; }, () => { cp.textContent = '복사 실패'; }); return; }
+  const rp = e.target.closest('.rep'); if (rp) { const f = SNAP.floors.find(x => x.n === +rp.dataset.n); showLobby(false); if (f && f.n !== curFloorN) { setFollow(false); switchTo(f.sessions[0].key); } return; }
+  const r = e.target.closest('.rw'); if (!r) return;
+  const f = SNAP.floors.find(x => x.n === +r.dataset.n); showLobby(false);
+  if (r.dataset.k && r.dataset.k !== curKey) { setFollow(false); switchTo(r.dataset.k); }
+  else if (f && f.n !== curFloorN) { setFollow(false); switchTo(f.sessions[0].key); }
+});
+$('#lobbyV').addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.closest('.rw')) e.target.click(); if (e.key === 'Escape') showLobby(false); });
+
+// 대표실 결재함 — 질문·에러가 올라온 층 모아 보기 (안내판 자리 빌려 씀)
+let bossOpen = false;
+function showBoss(v) { bossOpen = v; lobbyOpen = false; $('#lobbyV').classList.toggle('open', v); if (v) renderBoss(); renderDir(); }
+const WAIT_MS = 3 * 3600e3; // 3시간 넘게 답 안 한 건 결재함에서 뺌
+function waitingList() {
+  const now = Date.now();
+  return SNAP ? SNAP.floors.flatMap(f => f.sessions.filter(s => s.waiting && !floorAlert.has(f.proj)).map(s => ({ f, s }))) : [];
+}
+function renderBoss() {
+  const wrows = waitingList().map(({ f, s }) => `<div class="rw" data-n="${f.n}" data-k="${esc(s.key)}" tabindex="0"><span class="no jua">${fno(f.n)}</span><b>💬 ${esc(staff(s.agent === 'codex' ? 'codex' : 'claude', f.proj))} · ${esc(f.name)}</b>
+      <span class="st">${esc(s.statusLabel)} · ${agoTxt(s.waiting)}부터</span><span class="what"><span>${esc(s.state?.detail || s.label)}</span></span></div>`).join('');
+  const rows = SNAP.floors.filter(f => floorAlert.has(f.proj)).map(f => {
+    const k = floorAlert.get(f.proj), i = alertInfo.get(f.proj) || {};
+    return `<div class="rw" data-n="${f.n}" tabindex="0"><span class="no jua">${fno(f.n)}</span><b>${k === 'ask' ? '🙋' : '⚠'} ${esc(i.who || '')} · ${esc(f.name)}</b>
+      <span class="st">${i.at ? agoTxt(i.at) : ''}</span><span class="what"><span>${esc(i.text || (k === 'ask' ? '질문이 있어요' : '에러가 났어요'))}</span></span></div>`;
+  }).join('');
+  $('#board').innerHTML = `<header><h3 class="jua">${esc(SNAP.user || '')} 대표실 · 결재함</h3></header>
+    <div class="list">${rows + wrows || '<p style="margin:12px;color:#c9b08a;font-size:13px">올라온 질문이 없어요. 다들 열심히 일하는 중 ☕</p>'}</div>`;
+}
+
+// ───────── 층 정리 창 ─────────
+let tidyProj = null;
+const floorOf = (k) => ALL.find(F => F.proj === k);
+function openTidy(k) { tidyProj = k; $('#tidyBg').classList.add('open'); renderTidy(); const i = $('#tName'); if (i) i.focus(); }
+function closeTidy() { tidyProj = null; $('#tidyBg').classList.remove('open'); }
+function renderTidy() {
+  const F = floorOf(tidyProj); if (!F) return closeTidy();
+  const others = ALL.filter(o => o !== F);
+  const opt = (o) => `<option value="${esc(o.proj)}">${o.n && !hidden.has(o.proj) ? fno(o.n) + ' ' : '(숨김) '}${esc(o.name)}</option>`;
+  const cwd = (F.sessions.find(s => s.cwd) || {}).cwd;
+  $('#tidy').innerHTML = `<header><span class="no jua">${F.n && !hidden.has(F.proj) ? fno(F.n) : '숨김'}</span><h3 class="jua" id="tidyH">층 정리</h3><button data-a="close" aria-label="닫기">×</button></header>
+  <div class="bd">
+    <div class="row"><span class="lab">층 이름</span><input id="tName" value="${esc(layout.names[F.proj] || '')}" placeholder="${esc(F.orig || '새 층')}" maxlength="40"><button class="btn" data-a="name">바꾸기</button></div>
+    <div class="row"><span class="lab">직원 이름</span><input id="tCodex" value="${esc((layout.workers[F.proj] || {}).codex || '')}" placeholder="Codex" maxlength="12" aria-label="이 층 Codex 이름"><button class="btn" data-a="staff">정하기</button></div>
+    <div class="row"><span class="lab">꾸미기</span><select id="tTheme" style="flex:1">${Object.entries(THEMES).map(([k, v]) => `<option value="${k}" ${(layout.deco[F.proj] || {}).theme === k ? 'selected' : ''}>${v.name}</option>`).join('')}</select>
+      ${PROPS.map(([k, lab]) => `<label class="chip" style="cursor:pointer;padding-right:9px"><input type="checkbox" data-prop="${k}" ${(layout.deco[F.proj] || {})[k] ? 'checked' : ''}>${lab}</label>`).join('')}</div>
+    <div class="row"><span class="lab">폴더</span><span class="path">${esc(cwd ? cwd.replace(/^\/(Users|home)\/[^/]+/, '~') : F.proj.startsWith('new:') ? '직접 만든 층' : F.proj)}</span></div>
+    ${F.parts.length ? `<h4>이 층에 합친 층</h4><div>${F.parts.map(p => `<span class="chip">${esc(layout.names[p] || (RAW.floors.find(f => f.proj === p) || {}).name || p)}<button data-a="split" data-p="${esc(p)}">떼어내기</button></span>`).join('')}</div>` : ''}
+    <h4>세션 ${F.sessions.length}개 — 다른 층으로 옮기려면 오른쪽에서 고르세요</h4>
+    ${F.sessions.map(s => `<div class="sl"><span class="who ${s.agent === 'codex' ? 'cx' : ''}">${s.agent === 'codex' ? 'Codex' : 'Claude'}</span><span class="t" title="${esc(s.label)}">${esc(s.label)}</span><span class="w">${agoTxt(s.mtime)}</span>
+      <select data-k="${esc(s.key)}" aria-label="옮길 층"><option value="" selected>이 층에 둠</option>${others.map(opt).join('')}<option value="+new">＋ 새 층 만들기</option></select></div>`).join('')}
+    ${F.total > F.sessions.length ? `<p class="note">오래된 세션 ${F.total - F.sessions.length}개는 목록에 없어요.</p>` : ''}
+    ${others.length ? `<h4>이 층을 통째로 다른 층에 합치기</h4><div class="row"><select id="tMerge" style="flex:1"><option value="">층 고르기</option>${others.map(opt).join('')}</select><button class="btn" data-a="merge">합치기</button></div>` : ''}
+  </div>
+  <footer><button class="btn" data-a="hide">${hidden.has(F.proj) ? '숨긴 거 풀기' : '이 층 숨기기'}</button><span class="sp"></span><button class="lnk" data-a="reset">모든 층 처음대로</button><button class="btn pri" data-a="close">다 했어요</button></footer>`;
+}
+$('#tidyBg').addEventListener('click', (e) => {
+  if (e.target.id === 'tidyBg') return closeTidy();
+  const b = e.target.closest('button[data-a]'); if (!b) return;
+  const F = floorOf(tidyProj); if (!F) return closeTidy();
+  const a = b.dataset.a;
+  if (a === 'close') return closeTidy();
+  if (a === 'name') { const v = $('#tName').value.trim(); if (v) layout.names[F.proj] = v; else delete layout.names[F.proj]; relayout(); }
+  if (a === 'staff') {
+    const c = '', x = $('#tCodex').value.trim();
+    if (c || x) layout.workers[F.proj] = Object.assign({}, c && { claude: c }, x && { codex: x }); else delete layout.workers[F.proj];
+    relayout(); if (scene) { scene.workers.forEach(nameActor); renderCrew(); }
+  }
+  if (a === 'split') { delete layout.merge[b.dataset.p]; relayout(); }
+  if (a === 'merge') { const to = $('#tMerge').value; if (!to) return; layout.merge[F.proj] = to; tidyProj = rootOf(to); relayout(); }
+  if (a === 'hide') { if (hidden.has(F.proj)) hidden.delete(F.proj); else hidden.add(F.proj); relayout(F.n === curFloorN); }
+  if (a === 'reset') { if (!b.dataset.sure) { b.dataset.sure = 1; b.textContent = '정말요? 한 번 더 누르면 처음대로'; return; }
+    layout.names = {}; layout.merge = {}; layout.moves = {}; layout.workers = {}; layout.deco = {}; hidden.clear(); relayout(); }
+  renderTidy();
+});
+$('#tidyBg').addEventListener('change', (e) => {
+  if (e.target.id === 'tTheme' || e.target.dataset.prop) { // 층 꾸미기
+    const d = layout.deco[tidyProj] = Object.assign({}, layout.deco[tidyProj]);
+    if (e.target.id === 'tTheme') d.theme = e.target.value; else d[e.target.dataset.prop] = e.target.checked;
+    saveLayout(); return;
+  }
+  const sel = e.target.closest('select[data-k]'); if (!sel || !sel.value) return;
+  const key = sel.dataset.k; let to = sel.value;
+  if (to === '+new') { to = 'new:' + Date.now().toString(36); layout.names[to] = '새 층 ' + (Object.keys(layout.names).filter(k => k.startsWith('new:')).length + 1); }
+  if (to === homeOf.get(key)) delete layout.moves[key]; else layout.moves[key] = to;
+  relayout(); renderTidy();
+});
+$('#tidyBg').addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeTidy();
+  if (e.key === 'Enter' && e.target.id === 'tName') e.target.nextElementSibling.click();
+  if (e.key === 'Enter' && /^t(Claude|Codex)$/.test(e.target.id)) $('#tidy [data-a=staff]').click();
+});
+// ───────── 처음 설정 (건물 이름 · 내 이름 · 사용량 표시) ─────────
+// 서버가 snap.setup.need 로 알려주면 한 번 띄움. 오른쪽 위 ⚙️ 로 언제든 다시 열 수 있음
+let setupShown = false;
+function openSetup(first) {
+  const su = (RAW && RAW.setup) || {};
+  const ok = (v, yes, no) => v ? `✅ ${yes}` : `⬜ ${no}`;
+  $('#setup').innerHTML = `<h3 class="jua" id="setupH">${first ? '🏢 오피스 개장 준비' : '⚙️ 설정'}</h3>
+    <p class="lead">${first ? '반가워요! 두 가지만 정하면 바로 시작해요. 나중에 오른쪽 위 ⚙️ 에서 언제든 바꿀 수 있어요.' : '바꾸면 바로 화면에 반영돼요.'}</p>
+    <label class="f">건물 이름<small>지붕 간판과 브라우저 탭에 나와요</small><input type="text" id="suB" maxlength="40" placeholder="예: 우리집 오피스" value="${first ? '' : esc(RAW.building)}"></label>
+    <label class="f">내 이름<small>대표실 이름과 업무 일지에 쓰여요</small><input type="text" id="suU" maxlength="40" placeholder="예: 지민" value="${first ? '' : esc(RAW.user)}"></label>
+    <div class="found">${ok(su.hasCodex, 'Codex 기록을 읽고 있어요', 'Codex 기록이 아직 없어요 — Codex에서 작업하면 자동으로 표시됩니다')}<br>기록 읽기 전용 · 추가 모델 호출 없음</div>
+    <p class="msg" id="suMsg"></p>
+    <footer>${first ? '' : '<button type="button" class="btn" id="suX">닫기</button>'}<button type="submit" class="btn pri">${first ? '오피스 열기' : '저장'}</button></footer>`;
+  $('#setupBg').classList.add('open');
+  if ($('#suX')) $('#suX').onclick = closeSetup;
+  setTimeout(() => $('#suB').focus(), 50);
+}
+function closeSetup() { $('#setupBg').classList.remove('open'); }
+$('#setup').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const body = { building: $('#suB').value.trim(), user: $('#suU').value.trim() };
+  const msg = $('#suMsg');
+  if (!body.building || !body.user) { msg.textContent = '건물 이름과 내 이름을 둘 다 적어 주세요'; return; }
+  try {
+    const r = await (await fetch('/setup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).json();
+    if (!r.ok) { msg.textContent = r.msg || '저장하지 못했어요'; return; }
+    closeSetup();
+  } catch { msg.textContent = '서버에 연결하지 못했어요. 터미널에서 서버가 켜져 있는지 봐 주세요.'; }
+});
+$('#setupBg').addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('#suX')) closeSetup(); });
+$('#setupBtn').onclick = () => openSetup(false);
+
+// 자동 따라가기가 켜져 있으면 대표님도 지금 보는 층으로 따라감 (이미 와 있으면 그대로)
+function followMe() { if (follow && view === 'office' && scene && !scene.me) visit('office'); }
+function setFollow(v) { follow = v; if (v) onSnap(); else renderDir(); }
+
+let switching = false;
+async function switchTo(key) {
+  const s = allSessions().find(x => x.key === key); if (!s) return;
+  if (scene && scene.workers.has(key)) { // 같은 사무실 안에서 주인공만 바꿈 (다시 그리지 않음)
+    curKey = key; curFloorN = s.floor.n; scene.primary = key; renderDir(); syncCompanion(); return;
+  }
+  const prevN = curFloorN; curKey = key; curFloorN = s.floor.n;
+  renderDir();
+  if (prevN !== null && prevN !== s.floor.n) { switching = true; center.classList.add('fade'); await sleep(220); center.classList.remove('fade'); switching = false; }
+  buildScene(allSessions().find(x => x.key === curKey) || s);
+}
+function syncRecordedState() {
+  if (!scene) return;
+  for (const W of scene.workers.values()) {
+    const s = allSessions().find(x => x.key === W.key); if (!s) continue;
+    const st = s.state; if (!st) continue;
+    W.tools = s.tools; W.status = st.status; W.lastTool = fmtTool(st.tool, st.detail) || st.statusLabel;
+    if (st.status === 'stale' || ['completed','interrupted','failed','unknown'].includes(st.status)) {
+      comeDown(W); W.actor.badge = ''; W.actor.mood = '';
+      W.lastTool = st.statusLabel;
+    } else if (!s.waiting && W.upstairs) comeDown(W);
+    else if (s.waiting && !W.upstairs && W.actor.badge !== 'ask') { W.actor.badge = 'ask'; if (scene.me) reportToMe(W, st.statusLabel); else goUp(W); }
+    const expected = new Set((st.agents || []).map(a => a.id));
+    for (const [id, A] of W.agents) if (!expected.has(id) && !A.leaving) agentDone(W, id);
+    for (const a of st.agents || []) {
+      const A = W.agents.get(a.id);
+      if (!A) spawnAgent(W, a);
+      else if (!A.leaving && (A.info.tool !== a.tool || A.info.room !== a.room || A.info.status !== a.status || A.tools !== a.tools)) { A.info = a; agentTool(W, a.id, a); A.tools = a.tools; }
+    }
+  }
+  renderCrew();
+}
+function onSnap() {
+  syncRecordedState();
+  const all = allSessions(), now = Date.now();
+  if (!all.length) { clearScene(); scene = null; $('#crew').innerHTML = '<div class="cr">Codex 기록이 아직 없습니다. Codex에서 작업하면 자동으로 표시됩니다.</div>'; renderDir(); return; }
+  const cur = all.find(s => s.key === curKey);
+  let target = curKey;
+  if (follow) {
+    const best = all.filter(s => s.state).sort((a, b) => b.mtime - a.mtime)[0];
+    if (best && (!cur || (best.key !== curKey && now - cur.mtime > 20e3))) target = best.key;
+  } else if (cur) {
+    const newest = cur.floor.sessions[0];
+    if (newest.key !== curKey && newest.mtime > cur.mtime && newest.active && now - cur.mtime > 10e3) target = newest.key;
+  }
+  if (!target || !all.some(s => s.key === target)) target = all.length ? all.sort((a, b) => b.mtime - a.mtime)[0].key : null;
+  if (target && target !== curKey && !switching) switchTo(target).then(followMe); else { renderDir(); syncCompanion(); followMe(); }
+}
+
+// ───────── 그리기 루프 ─────────
+buildFurniture(); buildWalls();
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  const t = now / 1000;
+  elevOpen += (elevTarget - elevOpen) * Math.min(1, dt * 6);
+  const actors = allActors();
+  actors.forEach(a => a.update(dt));
+  busy = new Set(actors.filter(a => a !== (scene && scene.me)).map(a => zoneAt(a.x, a.y)).filter(Boolean));
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.setTransform(dpr * cam.z, 0, 0, dpr * cam.z, dpr * cam.x, dpr * cam.y);
+  if (view === 'ceo') {
+    ceoActors.forEach(a => a.update(dt));
+    drawIsland(CEO); drawCeoRoom();
+    const list = ceoItems.slice();
+    for (const a of ceoActors) list.push({ k: a.x + a.y, draw: () => drawPerson(a, t) });
+    list.sort((a, b) => a.k - b.k).forEach(d => d.draw());
+    if (isNight()) drawNight(t, CEO_ROOMS);
+  } else if (view === 'roof') {
+    roofActors.forEach(a => a.update(dt));
+    drawIsland(ROOF); drawRoof(t);
+    const list = roofItems.slice();
+    for (const a of roofActors) list.push({ k: a.x + a.y, draw: () => drawPerson(a, t) });
+    list.sort((a, b) => a.k - b.k).forEach(d => d.draw());
+    if (isNight()) { drawNight(t, ROOF_ROOMS); drawRoofLights(t); }
+  } else if (view === 'lobby') {
+    lobbyActors.forEach(a => a.update(dt));
+    drawIsland(LOBBY); drawLobbyRoom(t);
+    const list = lobbyItems.slice();
+    for (const a of lobbyActors) list.push({ k: a.x + a.y, draw: () => drawPerson(a, t) });
+    list.sort((a, b) => a.k - b.k).forEach(d => d.draw());
+    if (isNight()) drawNight(t, LOBBY_ROOMS);
+  } else {
+    const deco = decoNow(), th = THEMES[deco.theme] || THEMES.basic;
+    drawIsland(); if (th.grass) drawGrass(th.grass); drawFloor(); if (th.floor) faceZ(0, 0, WORLD.w, WORLD.h, .3, th.floor);
+    drawBackWalls(); if (th.wall) { faceY(0, 0, WORLD.w, 5, WALL, th.wall); faceX(0, 0, 8, 5, WALL, th.wall); faceX(0, 10.2, WORLD.h, 5, WALL, th.wall); }
+    const list = items.slice();
+    for (const it of decoItems(deco, t)) list.push(it);
+    for (const a of actors) if (!a.away) list.push({ k: a.x + a.y, draw: () => drawPerson(a, t) });
+    list.sort((a, b) => a.k - b.k).forEach(d => d.draw());
+    if (isNight()) drawNight(t);
+    drawWeather(t, dt);
+  }
+  actors.forEach(a => a.place()); ceoActors.forEach(a => a.place()); lobbyActors.forEach(a => a.place()); roofActors.forEach(a => a.place()); placeSigns();
+  requestAnimationFrame(frame);
+}
+
+// ───────── 사용량 (Claude · Codex 5시간 / 주간 한도) ─────────
+function renderUsage(u) {
+  const x = u && u.codex;
+  const windowCell = (w, fallback) => {
+    if (!w) return `<span class="w">${fallback} 기록 없음</span>`;
+    const minutes = w.window_minutes;
+    const label = minutes ? (minutes % 1440 === 0 ? `${minutes / 1440}일` : minutes % 60 === 0 ? `${minutes / 60}시간` : `${minutes}분`) : fallback;
+    const expired = w.resets_at && w.resets_at * 1000 < Date.now();
+    return `<span class="w" title="마지막 기록 값 · 실시간 조회 아님">${label} ${Math.round(w.used)}%${expired ? ' (갱신 대기)' : ''}</span>`;
+  };
+  $('#usage').innerHTML = `<span class="who cx">◇ Codex</span>` + (x ? windowCell(x.primary, '한도 1') + windowCell(x.secondary, '한도 2') : '<span class="na">사용량 기록 없음</span>');
+  $('#usage').title = x ? `기록 시각 ${new Date(x.at).toLocaleString('ko-KR')}${x.stale ? ' · 오래된 기록' : ''}` : '기록에 사용량 정보가 있을 때 표시합니다';
+}
+
+// ───────── 날씨 ─────────
+// 오래 고민하면 섬 위에 구름이 몰려오고, 에러가 나면 비, 일을 마치면 해(밤엔 무지개 대신 반짝임)
+const weather = { cloud: 0, target: 0, rainUntil: 0, sunUntil: 0, thinkSince: 0 };
+function weatherOn(e) {
+  const now = performance.now();
+  if (e.k === 'think') { if (!weather.thinkSince) weather.thinkSince = now; weather.target = Math.min(1, weather.target + .25); }
+  else if (/^(tool|say)$/.test(e.k)) weather.thinkSince = 0;
+  if (e.k === 'error' || e.k === 'agentErr') { weather.rainUntil = now + 5000; weather.target = Math.max(weather.target, .85); }
+  if ((e.k === 'status' && e.status === 'completed') || e.k === 'agentDone') { weather.sunUntil = now + 7000; weather.target = 0; weather.rainUntil = 0; }
+}
+const CLOUDS = [[4, 3, 1.6], [11, 1, 1.3], [18, 4, 1.7], [5, 10, 1.4], [13, 9, 1.5], [19, 13, 1.3]];
+function cloudShape(x, y, s, c) {
+  for (const [dx, dy, r] of [[-26, 4, 18], [-8, -6, 24], [14, -2, 20], [30, 6, 14], [0, 8, 20]]) ellipse(x + dx * s, y + dy * s, r * s * 1.15, r * s * .8, c);
+}
+function drawWeather(t, dt) {
+  const now = performance.now();
+  if (weather.thinkSince && now - weather.thinkSince > 8000) weather.target = Math.min(1, weather.target + dt * .08); // 8초 넘게 고민 → 더 흐려짐
+  else weather.target = Math.max(0, weather.target - dt * .025); // 천천히 갬
+  weather.cloud += (weather.target - weather.cloud) * Math.min(1, dt * 1.5);
+  const night = isNight();
+  if (weather.cloud > .02) {
+    ctx.save(); ctx.globalAlpha = Math.min(.92, weather.cloud);
+    CLOUDS.forEach(([cx, cy, sc], i) => {
+      const drift = Math.sin(t * .08 + i * 1.7) * 2.2, [x, y] = P(cx + drift, cy, 150 + (i % 3) * 14);
+      if (weather.cloud < (i + 1) / (CLOUDS.length + 1)) return; // 흐릴수록 구름이 많아짐
+      ctx.globalAlpha = Math.min(.9, weather.cloud * 1.2);
+      ellipse(x, y + 120, 46 * sc, 12 * sc, 'rgba(40,40,80,.10)'); // 바닥 그림자
+      cloudShape(x, y, sc, night ? '#8d93b8' : now < weather.rainUntil ? '#c9cede' : '#ffffff');
+    });
+    ctx.restore();
+  }
+  if (now < weather.rainUntil) { // 비
+    ctx.save(); ctx.strokeStyle = night ? 'rgba(170,190,255,.55)' : 'rgba(90,140,220,.55)'; ctx.lineWidth = 1.4; ctx.beginPath();
+    CLOUDS.forEach(([cx, cy], i) => {
+      const drift = Math.sin(t * .08 + i * 1.7) * 2.2, [x, y] = P(cx + drift, cy, 150 + (i % 3) * 14);
+      for (let k = 0; k < 9; k++) { const ox = (k * 13 % 60) - 30, fall = ((t * 260 + k * 37 + i * 50) % 140); ctx.moveTo(x + ox, y + 12 + fall); ctx.lineTo(x + ox - 3, y + 22 + fall); }
+    });
+    ctx.stroke(); ctx.restore();
+  }
+  if (now < weather.sunUntil) { // 해 (밤엔 별 반짝임)
+    const a = Math.min(1, (weather.sunUntil - now) / 1500, (now - (weather.sunUntil - 7000)) / 600);
+    const [x, y] = P(-1, 5, 130);
+    ctx.save(); ctx.globalAlpha = a;
+    if (night) {
+      for (let k = 0; k < 7; k++) { const ang = k * .9 + t, r = 40 + (k % 3) * 22; const [sx, sy] = [x + Math.cos(ang) * r * 2, y + Math.sin(ang) * r]; ctx.fillStyle = '#fff6c8'; ctx.beginPath(); ctx.arc(sx, sy, 2 + Math.sin(t * 6 + k) * 1.2, 0, Math.PI * 2); ctx.fill(); }
+    } else {
+      const g = ctx.createRadialGradient(x, y, 10, x, y, 120); g.addColorStop(0, 'rgba(255,220,120,.55)'); g.addColorStop(1, 'rgba(255,220,120,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, 120, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#ffc94d'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.beginPath();
+      for (let k = 0; k < 10; k++) { const ang = k / 10 * Math.PI * 2 + t * .5; ctx.moveTo(x + Math.cos(ang) * 34, y + Math.sin(ang) * 34); ctx.lineTo(x + Math.cos(ang) * 46, y + Math.sin(ang) * 46); }
+      ctx.stroke(); circle(x, y, 26, '#ffd34d', '#e8a92a');
+    }
+    ctx.restore();
+  }
+}
+
+// ───────── 층 꾸미기 ─────────
+// 층마다 테마(잔디 · 바닥 빛 · 벽지)와 소품(고양이 · 어항 · 꽃)을 고름. layout.deco[층] 에 저장 (이 브라우저)
+const THEMES = {
+  basic: { name: '🏢 기본' },
+  forest: { name: '🌲 숲', grass: '#7cc46a', floor: 'rgba(120,190,110,.10)', wall: 'rgba(110,170,100,.16)' },
+  sea: { name: '🌊 바다', grass: '#8fd3c8', floor: 'rgba(90,170,230,.10)', wall: 'rgba(90,160,230,.16)' },
+  sakura: { name: '🌸 벚꽃', grass: '#f2b8c8', floor: 'rgba(255,150,180,.10)', wall: 'rgba(255,150,185,.16)' },
+  cafe: { name: '☕ 카페', grass: '#b8c98a', floor: 'rgba(160,110,60,.12)', wall: 'rgba(150,100,60,.16)' },
+  space: { name: '🚀 우주', grass: '#8a86c8', floor: 'rgba(80,70,170,.12)', wall: 'rgba(70,60,160,.20)' },
+};
+const PROPS = [['cat', '🐈 고양이'], ['fish', '🐠 어항'], ['flower', '🌷 꽃']];
+const decoNow = () => layout.deco[curProj()] || {};
+function drawGrass(c) { // 섬 윗면 잔디 색만 덮어 칠함
+  const L = -ISLE, R = WORLD.w + ISLE, B = WORLD.h + ISLE;
+  poly([P(L, L), P(R, L), P(R, B), P(L, B)], c);
+  box(-.3, -.3, WORLD.w + .5, WORLD.h + .5, 5, '#f1ede6', -5);
+}
+function decoItems(d, t) {
+  const out = [];
+  if (d.cat) { // 복도 소파 위 고양이 — 꼬리 흔들기
+    const x = 14.1, y = 7.7;
+    out.push({ k: x + y + .6, draw: () => {
+      const [px, py] = P(x, y, 12);
+      ctx.save(); ctx.translate(px, py); ctx.scale(1.45, 1.45); ctx.translate(-px, -py);
+      ellipse(px, py - 6, 9, 6, '#f2a65a'); circle(px + 7, py - 13, 5.5, '#f2a65a', OUT);
+      poly([[px + 3.5, py - 17], [px + 5, py - 22], [px + 7, py - 18]], '#f2a65a'); poly([[px + 7.5, py - 18], [px + 10, py - 22], [px + 11, py - 17]], '#f2a65a');
+      circle(px + 5.5, py - 13.5, .9, '#2b2232'); circle(px + 9, py - 13.5, .9, '#2b2232');
+      const w = Math.sin(t * 3) * 4; ctx.strokeStyle = '#e08d43'; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(px - 8, py - 6); ctx.quadraticCurveTo(px - 14, py - 10 + w, px - 12, py - 16 + w); ctx.stroke();
+      ctx.restore();
+    } });
+  }
+  if (d.fish) { // 복도 어항
+    const x = 9.2, y = 7.3; // 복도 위쪽 벽 앞 (자료실 문과 개발실 문 사이)
+    out.push({ k: x + y + .8, draw: () => {
+      box(x, y, 1.3, .55, 16, '#8a6444');
+      box(x + .05, y + .05, 1.2, .45, 22, 'rgba(120,200,255,.6)', 16);
+      for (let i = 0; i < 3; i++) { const fx = x + .2 + ((t * .15 + i * .3) % .85), [px, py] = P(fx, y + .3, 22 + i * 5); ellipse(px, py, 3.6, 2, ['#ff8a3d', '#ffd34d', '#ff6b8a'][i]); }
+      const [bx, by] = P(x + .9, y + .3, 24 + (t * 12) % 14); circle(bx, by, 1.4, 'rgba(255,255,255,.8)'); // 물방울
+    } });
+  }
+  if (d.flower) { // 방마다 꽃 화분
+    for (const [x, y] of [[7.2, 6.2], [14.3, 1.0], [21.2, 6.3], [.7, 12.0], [14.3, 17.0], [21.3, 13.5]]) out.push({ k: x + y + .5, draw: () => {
+      box(x, y, .45, .45, 9, '#d97a5a');
+      const [px, py] = P(x + .22, y + .22, 9);
+      for (let i = 0; i < 3; i++) { const ox = (i - 1) * 4; ctx.strokeStyle = '#4d9a4c'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(px + ox, py); ctx.lineTo(px + ox, py - 9); ctx.stroke(); circle(px + ox, py - 10, 2.6, ['#ff6b8a', '#ffd34d', '#b78cff'][i], OUT); }
+    } });
+  }
+  return out;
+}
+
+// ───────── 대표님 방문 ─────────
+// 층(또는 로비 · 옥상)을 직접 누르면 대표 캐릭터가 엘리베이터를 타고 그 층에 도착함. 다른 데로 가면 떠남
+let visitor = null; // { a: Actor, arr: 담긴 목록 }
+function dropVisitor() {
+  if (!visitor) return;
+  if (scene && scene.me === visitor.a) setTimeout(() => { if (scene && !scene.me) scene.workers.forEach(W => { if (W.actor.badge === 'ask' && !W.upstairs) goUp(W); }); }, 0); // 대표님이 가면 대표실로
+  visitor.a.remove(); if (visitor.arr) { const i = visitor.arr.indexOf(visitor.a); if (i >= 0) visitor.arr.splice(i, 1); }
+  if (scene && scene.me === visitor.a) scene.me = null;
+  visitor = null;
+}
+function visit(where) {
+  dropVisitor(); if (!SNAP) return;
+  const mk = (x, y) => { const a = new Actor('me', x, y); a.setName(SNAP.user || '대표', '대표'); return a; };
+  elevTarget = 1; setTimeout(() => { elevTarget = 0; }, 1500);
+  if (where === 'office' && scene) {
+    const a = mk(...SPOTS.elevIn); scene.me = a; visitor = { a, arr: null };
+    a.walk([SPOTS.elevOut, [4.6, LANE]]).then(ok => {
+      if (!ok || visitor?.a !== a) return;
+      a.say('user', '', '둘러보러 왔어요 👀', 2600);
+      const W = primary(); if (W && !W.upstairs && W.actor.badge !== 'ask') setTimeout(() => W.actor.say('', '', '대표님 오셨어요! 👋', 2500), 900);
+      for (const X of scene.workers.values()) if (X.upstairs || X.actor.badge === 'ask') { comeDown(X); reportToMe(X); } // 대표실에서 기다리던 직원도 내려와서 보고
+    });
+  } else if (where === 'lobby') {
+    const a = mk(...LB.elevIn); a.scene = 'lobby'; lobbyActors.push(a); visitor = { a, arr: lobbyActors };
+    a.walk([LB.elevOut, [3.2, LB.hall[1]]]).then(ok => { if (!ok || visitor?.a !== a) return; a.say('user', '', '로비 점검 중 🧐', 2500); if (lobbyGuide) setTimeout(() => lobbyGuide.say('', '', '대표님 안녕하세요! 🙇', 2500), 900); });
+  } else if (where === 'roof') {
+    const a = mk(...RF.door); a.scene = 'roof'; roofActors.push(a); visitor = { a, arr: roofActors };
+    a.walk([RF.out, [2.4, 4.8]]).then(ok => { if (!ok || visitor?.a !== a) return; a.say('user', '', '바람 쐬러 왔어요 🌿', 2500); });
+  }
+}
+
+// ───────── 대표실 디오라마 ─────────
+// 작은 섬 하나(12×10). 큰 책상 뒤에 대표(나), 답을 기다리는 직원들은 엘리베이터로 올라와 책상 앞에 줄을 섬
+const CEO_ROOMS = { ceo: { x: 0, y: 0, w: 12, h: 10, name: '대표실', tone: '#2f2a4a' } };
+const CEO_ELEV = { in: [.45, 5.1], out: [1.6, 5.4] };
+const ceoItems = [], ceoActors = [], ceoQ = new Map(); // ceoQ: 세션 key → Actor
+let ceoMe = null;
+{ // 가구를 대표실 목록에 등록 (add() 는 items 에 넣으므로 잠깐 바꿔 끼움)
+  const saved = items.splice(0);
+  const deskX = 4.6, deskY = 2.6;
+  // 큰 대표 책상 (짙은 나무) + 모니터 뒷면 · 결재 서류함 · 명패 · 전화
+  add(deskX, deskY, 3.6, 1.2, () => {
+    box(deskX, deskY, 3.6, 1.2, 26, '#6b4a33'); faceY(deskY + 1.2, deskX + .1, deskX + 3.5, 3, 24, '#5a3d29');
+    box(deskX + .3, deskY + .25, .8, .55, 3, '#f7f2e6', 26); // 서류함
+    const n = Math.min(6, waitingList().length + [...floorAlert.values()].length);
+    for (let i = 0; i < n; i++) box(deskX + .35, deskY + .3, .7, .45, 1.2, i % 2 ? '#ffffff' : '#fff4d6', 29 + i * 1.3); // 결재 서류 (쌓인 만큼)
+    box(deskX + 1.35, deskY + .3, .5, .35, 4, '#2f2a4a', 26); // 전화
+    box(deskX + 1.3, deskY + .95, 1.2, .12, 6, '#ffd34d', 26); // 명패
+    wallText('대표', deskX + 1.9, deskY + 1.07, 29, 'y', '9px Jua,sans-serif', '#3a2a00');
+  }, .3);
+  monitorBack(deskX + 2.8, deskY + .2, 26); // 모니터는 오른쪽 끝에 하나 (대표 얼굴 안 가리게)
+  add(deskX + 1.5, deskY - 1.4, .8, .7, () => { box(deskX + 1.55, deskY - 1.35, .7, .6, 14, '#2f2a4a'); box(deskX + 1.55, deskY - 1.45, .7, .15, 40, '#3d3760'); }); // 대표 의자 (대표 뒤)
+  // 왼쪽 앞: 손님 소파 · 낮은 탁자
+  sofa(1.0, 8.3, 2.6, '#c58449'); table(1.4, 7.0, 1.8, .8, '#f7efe6', 12); plant(.6, 7.2, 1.1);
+  // 오른쪽: 트로피장 (이달의 직원)
+  add(10.2, 3.2, 1.4, .6, () => {
+    box(10.2, 3.2, 1.4, .6, 50, '#8a6444');
+    for (let k = 0; k < 3; k++) { box(10.3, 3.25, 1.2, .5, 1.5, '#a47b55', 12 + k * 13); }
+    box(10.75, 3.35, .3, .3, 7, '#ffd34d', 26); box(10.85, 3.42, .1, .1, 4, '#ffd34d', 33); // 트로피
+  });
+  plant(11.3, 8.8, 1.2); plant(9.4, 1.0); bush(11.6, 10.4); tree(13.0, 9.6, .9); tree(-1.0, 10.8, .85);
+  ceoItems.push(...items.splice(0)); items.push(...saved);
+}
+function drawCeoRoom() {
+  const { w: W, h: H } = CEO;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) faceZ(x, y, x + 1, y + 1, 0, (x + y * 2) % 3 === 0 ? '#c9a27a' : (x + y) % 2 ? '#c29a71' : '#cda780'); // 나무 바닥
+  faceZ(3.6, 1.4, 9.4, 7.4, .4, '#8e2f3c'); faceZ(3.8, 1.6, 9.2, 7.2, .5, '#a63a48'); // 붉은 카펫
+  faceZ(.2, 4.7, 3.6, 5.9, .45, '#a63a48'); // 엘리베이터에서 책상까지 이어진 카펫
+  const e = EDGE; EDGE = 'rgba(55,45,70,.22)';
+  box(-.3, -.3, W + .3, .3, WALL, '#f3ece2'); box(-.3, 0, .3, H, WALL, '#f3ece2');
+  EDGE = e;
+  faceY(0, 0, W, 0, WALL, '#3a3466'); faceX(0, 0, H, 0, WALL, '#3a3466'); // 남색 벽지
+  faceY(0, 0, W, 0, 26, '#6b4a33'); faceX(0, 0, H, 0, 26, '#6b4a33'); // 나무 징두리
+  // 큰 창문 + 창밖 도시
+  const night = isNight();
+  faceY(0, 1.2, 4.2, 30, 78, '#ffffff'); faceY(0, 1.3, 4.1, 32, 76, night ? '#1f2350' : '#bcd8ff');
+  for (let i = 0; i < 6; i++) { const x = 1.4 + i * .45, h = 10 + (i * 7) % 18; faceY(0, x, x + .35, 32, 32 + h, night ? '#2c2f5e' : '#9fb3d6'); if (night) faceY(0, x + .1, x + .18, 34 + h / 2, 37 + h / 2, '#ffd27a'); }
+  faceY(0, 2.65, 2.75, 32, 76, '#ffffff');
+  // 액자 (건물 이름)
+  faceY(0, 5.0, 8.4, 46, 72, '#ffd34d'); faceY(0, 5.1, 8.3, 48, 70, '#fff8e6');
+  wallText(TITLE, 6.7, 0, 59, 'y', '8px Jua,sans-serif', '#3a3466'); // 액자에 건물 이름
+  // 책장 (뒷벽 오른쪽)
+  for (let k = 0; k < 4; k++) faceY(0, 8.8 + k * .7, 9.4 + k * .7, 30, 74, '#8a6444');
+  for (let k = 0; k < 16; k++) { const x = 8.85 + (k % 8) * .35, z = k < 8 ? 36 : 56; faceY(0, x, x + .25, z, z + 12, BOOKS[k % BOOKS.length]); }
+  // 엘리베이터 (왼쪽 벽)
+  faceX(.01, 4.05, 6.15, 0, 66, '#8f95aa');
+  const half = .9 * elevOpen;
+  faceX(.02, 4.15, 6.05, 0, 62, '#3a3f52');
+  faceX(.03, 4.15, 5.1 - half, 0, 62, '#cfd4e2'); faceX(.03, 5.1 + half, 6.05, 0, 62, '#cfd4e2');
+  faceX(.02, 4.6, 5.6, 70, 80, '#1d1f2b');
+  wallText('대표', .02, 5.1, 75, 'x', '11px Jua,sans-serif', '#ffb347');
+  faceY(0, 0, W, 0, 5, '#4a3423'); faceX(0, 0, H, 0, 5, '#4a3423');
+}
+// 기다리는 사람 = 질문·에러가 올라온 층 + 답변 대기 세션
+function ceoWaiting() {
+  const out = [];
+  for (const f of SNAP ? SNAP.floors : []) {
+    const al = floorAlert.get(f.proj);
+    if (al) { const s = f.sessions.find(x => x.active) || f.sessions[0]; if (s) out.push({ f, s, kind: al, status: (alertInfo.get(f.proj) || {}).status, text: (alertInfo.get(f.proj) || {}).text }); }
+  }
+  for (const { f, s } of waitingList()) out.push({ f, s, kind: 'wait', status: s.status, text: s.state?.detail || s.label });
+  return out;
+}
+const ceoSlot = (i) => [3.9 + (i % 5) * 1.25, 5.3 + Math.floor(i / 5) * 1.3]; // 책상 앞 줄 (5명씩)
+function syncCeo() {
+  if (!ceoMe) { ceoMe = new Actor('me', 6.4, 2.0); ceoMe.scene = 'ceo'; ceoActors.push(ceoMe); }
+  ceoMe.setName(SNAP.user || '나', '대표');
+  const list = ceoWaiting(), keep = new Set(list.map(x => x.s.key));
+  for (const [k, a] of ceoQ) if (!keep.has(k) && !a.leaving) { // 답 받은 사람은 엘리베이터로 내려감
+    a.leaving = true; a.say('report', '감사합니다!', '', 1500);
+    a.walk([CEO_ELEV.out, CEO_ELEV.in]).then(() => { a.remove(); ceoQ.delete(k); ceoActors.splice(ceoActors.indexOf(a), 1); });
+  }
+  list.forEach((x, i) => {
+    let a = ceoQ.get(x.s.key); const [sx, sy] = ceoSlot(i);
+    if (!a) {
+      a = new Actor(x.s.agent === 'codex' ? 'codex' : 'claude', CEO_ELEV.in[0], CEO_ELEV.in[1]); a.scene = 'ceo';
+      ceoQ.set(x.s.key, a); ceoActors.push(a);
+      elevTarget = 1; setTimeout(() => { elevTarget = 0; }, 1200);
+      a.walk([CEO_ELEV.out, [sx, CEO_ELEV.out[1]], [sx, sy]]);
+      a.say(x.kind === 'err' ? 'error' : '', x.kind === 'ask' ? (x.status === 'waiting_approval' ? '승인 대기' : '질문 있어요') : x.kind === 'err' ? '에러 보고' : '결재 부탁드려요', x.text || '', 4000);
+    } else if (!a.walking && !a.leaving && (Math.abs(a.x - sx) > .05 || Math.abs(a.y - sy) > .05)) a.walk([[sx, sy]]);
+    a.badge = x.kind === 'wait' ? '' : 'ask'; a.mood = x.kind === 'err' ? 'sweat' : '';
+    a.setName(staff(x.s.agent === 'codex' ? 'codex' : 'claude', x.f.proj), fno(x.f.n));
+  });
+}
+function renderCeoCrew() {
+  const list = ceoWaiting();
+  $('#crew').innerHTML = list.length ? list.map(({ f, s, kind, status, text }) => `<div class="cr ${s.agent === 'codex' ? 'codex' : 'claude'}" data-goto="${esc(s.key)}" style="cursor:pointer"><img src="${avatar(s.agent === 'codex' ? 'codex' : 'claude')}" alt=""><div class="m">
+      <div class="r1"><b>${esc(staff(s.agent === 'codex' ? 'codex' : 'claude', f.proj))}</b><span class="st ${kind === 'err' ? 'sweat' : 'think'}">${status === 'waiting_approval' ? '🙋 승인 대기' : kind === 'ask' ? '🙋 질문' : kind === 'err' ? '⚠ 에러' : '💬 질문 응답 대기'}</span></div>
+      <div class="r2">${esc(text || '')}</div><div class="r3">${fno(f.n)} ${esc(f.name)}${s.waiting ? ' · ' + agoTxt(s.waiting) + '부터' : ''} · 누르면 그 층으로</div></div></div>`).join('')
+    : `<div class="cr"><img src="${avatar('me')}" alt=""><div class="m"><div class="r1"><b>결재함이 비었어요</b></div><div class="r2">다들 열심히 일하는 중 ☕</div></div></div>`;
+}
+function setView(v) {
+  if (view === v) return;
+  dropVisitor(); setTimeout(followMe, 0);
+  view = v; showLobby(false); fitView(); renderDir(); renderCrew();
+}
+
+// ───────── RF 옥상정원 디오라마 ─────────
+// 낮은 난간 · 엘리베이터 출입구 · 원목 데크와 퍼걸러 · 선베드 · 화단 · 잔디밭 · 연못 · 실외기 · 줄전구(밤)
+// 일을 멈추고 쉬는 직원(90초 ~ 30분)이 올라와서 쉬고, 다시 일하면 내려감
+const ROOF_ROOMS = { roof: { x: 0, y: 0, w: 13, h: 10, name: '옥상정원', tone: '#2f9e66' } };
+const RF = { door: [1.4, 2.75], out: [1.4, 3.6] };
+const ROOF_SPOTS = [[4.6, 3.3], [6.1, 3.3], [7.6, 3.3], [3.2, 7.6], [4.8, 8.3], [9.6, 9.0], [11.2, 6.2], [6.4, 6.4]];
+const ROOF_TALK = ['바람 시원하다~', '광합성 중 🌞', '커피 한 잔의 여유 ☕', '토마토 익었다 🍅', '잠깐만 쉬고 갈게요', '하늘 예쁘다 ☁️'];
+const roofItems = [], roofActors = [], roofQ = new Map();
+const POSTS = [[3.6, 1.2], [9.2, 1.2], [3.6, 4.6], [9.2, 4.6]];
+{
+  const saved = items.splice(0);
+  // 엘리베이터 출입구 (뒤 왼쪽 작은 건물)
+  add(.2, .2, 2.4, 2.2, () => {
+    box(.2, .2, 2.4, 2.2, 74, '#ece6dc'); box(.1, .1, 2.6, 2.4, 4, '#cfc6b8', 74);
+    faceY(2.4, .75, 2.05, 0, 54, '#8f95aa'); faceY(2.41, .82, 1.98, 0, 51, elevOpen > .3 ? '#3a3f52' : '#cfd4e2'); faceY(2.41, 1.39, 1.41, 0, 51, '#9aa0b4');
+    wallText('RF', 1.4, 2.42, 62, 'y', '10px Jua,sans-serif', '#2f9e66');
+  });
+  // 퍼걸러 기둥 + 위 들보 + 덩굴
+  for (const [x, y] of POSTS) add(x, y, .2, .2, () => box(x, y, .2, .2, 92, '#a47b55'));
+  add(3.6, 1.2, 5.8, 3.6, () => { // 높은 들보 + 들보 따라 덩굴 (아래 사람 얼굴 안 가리게)
+    for (const y of [1.2, 4.6]) box(3.5, y - .02, 6.0, .24, 5, '#8a6444', 92);
+    for (let x = 3.8; x < 9.3; x += 1.1) box(x, 1.1, .1, 3.8, 3, '#a47b55', 97);
+    for (const y of [1.2, 4.6]) for (let i = 0; i < 9; i++) { const [px, py] = P(3.8 + i * .65, y + .1, 99); circle(px, py, 4 + (i % 2), ['#5aa858', '#72bd66', '#4d9a4c'][i % 3]); if (i % 3 === 0) circle(px + 3, py - 2, 1.8, '#ff8fa8'); }
+  }, 3);
+  // 선베드 3개 (데크 위)
+  for (const x of [4.2, 5.7, 7.2]) add(x, 2.8, 1.0, 1.4, () => { box(x, 2.8, 1.0, 1.4, 8, '#ffffff'); box(x, 2.8, 1.0, .35, 18, '#ffb347'); box(x + .05, 3.2, .9, 1.0, 2, '#ffd9a8', 8); });
+  // 화단 (오른쪽) — 꽃 · 채소
+  for (const [x, y, kind] of [[10.4, .6, 'flower'], [10.4, 2.2, 'veg'], [10.4, 3.8, 'flower']]) add(x, y, 2.2, 1.1, () => {
+    box(x, y, 2.2, 1.1, 14, '#a47b55'); faceZ(x + .1, y + .1, x + 2.1, y + 1.0, 14.5, '#6b4a33');
+    for (let i = 0; i < 6; i++) { const [px, py] = P(x + .35 + (i % 3) * .7, y + .3 + Math.floor(i / 3) * .45, 14);
+      if (kind === 'veg') { circle(px, py - 6, 5, '#4d9a4c'); circle(px + 2, py - 4, 2.2, '#e0574c'); }
+      else { ctx.strokeStyle = '#4d9a4c'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, py - 9); ctx.stroke(); circle(px, py - 10, 2.8, ['#ff6b8a', '#ffd34d', '#b78cff', '#ff8a3d'][i % 4], OUT); } }
+  });
+  // 벤치 (연못 옆) · 실외기 · 큰 화분
+  add(9.1, 9.1, 1.4, .5, () => { box(9.1, 9.1, 1.4, .5, 9, '#a47b55'); box(9.1, 9.5, 1.4, .1, 18, '#8a6444'); });
+  for (const x of [5.2, 6.6]) add(x, .2, 1.1, .9, () => { box(x, .2, 1.1, .9, 22, '#dfe3ea'); const [px, py] = P(x + .55, .65, 22); ellipse(px, py, 9, 4.5, '#9aa0b4'); });
+  plant(12.3, 9.3, 1.3); plant(2.9, .5, 1.1); plant(.6, 9.3, 1.2);
+  // 앞쪽 낮은 난간
+  add(0, 9.9, 13, .1, () => { box(0, 9.92, 13, .08, 12, '#eef2f7'); for (let x = 0; x <= 13; x += 1) box(x, 9.9, .1, .1, 14, '#c9ced8'); }, .5);
+  add(12.9, 0, .1, 10, () => { box(12.92, 0, .08, 10, 12, '#eef2f7'); for (let y = 0; y < 10; y += 1) box(12.9, y, .1, .1, 14, '#c9ced8'); }, .5);
+  tree(14.4, 3.0, .9); tree(-1.0, 11.0, .85); bush(6.5, 11.3); bush(14.3, 7.5);
+  roofItems.push(...items.splice(0)); items.push(...saved);
+}
+function drawRoof(t) {
+  const { w: W, h: H } = ROOF;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) faceZ(x, y, x + 1, y + 1, 0, (x + y) % 2 ? '#d9d6d0' : '#cfccc6'); // 옥상 바닥
+  for (let x = 3.4; x < 9.6; x += .4) faceZ(x, .9, x + .4, 5.0, .5, (x * 5) % 2 < 1 ? '#c99a6b' : '#bd8e60'); // 원목 데크
+  faceZ(1.0, 6.0, 6.6, 9.4, .5, '#8fd07a'); // 잔디밭
+  for (let i = 0; i < 14; i++) { const [px, py] = P(1.3 + (i * 37 % 50) / 10, 6.3 + (i * 17 % 30) / 10, .6); circle(px, py, 1.4, ['#ffffff', '#ffd34d', '#ff8fa8'][i % 3]); }
+  // 연못
+  const [cx, cy] = P(9.0, 7.0, .6); ellipse(cx, cy, 58, 26, '#a47b55'); ellipse(cx, cy, 52, 22, '#6cb6ff');
+  ellipse(cx - 18 + Math.sin(t) * 3, cy + 4, 7, 3, '#5aa858'); ellipse(cx + 16, cy - 6, 6, 2.5, '#5aa858');
+  ellipse(cx + 6 + Math.sin(t * 1.5) * 10, cy + 2, 3.5, 1.6, '#ff8a3d'); // 금붕어
+  // 뒤쪽 난간
+  const e = EDGE; EDGE = 'rgba(55,45,70,.22)';
+  box(-.2, -.2, W + .2, .2, 14, '#eef2f7'); box(-.2, 0, .2, H, 14, '#eef2f7');
+  EDGE = e;
+}
+function drawRoofLights(t) { // 밤: 퍼걸러 줄전구
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (const [y] of [[1.2], [4.6]]) for (let i = 0; i <= 10; i++) {
+    const x = 3.7 + i * .55, [px, py] = P(x, y, 88 - Math.sin(i / 10 * Math.PI) * 6), k = .55 + Math.sin(t * 3 + i) * .2;
+    const g = ctx.createRadialGradient(px, py, 0, px, py, 10); g.addColorStop(0, `rgba(255,220,140,${k})`); g.addColorStop(1, 'rgba(255,220,140,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, 10, 0, 7); ctx.fill(); circle(px, py, 1.6, '#fff3c4');
+  }
+  ctx.restore();
+}
+function roofResting() { // 일을 멈추고 쉬는 직원 (90초 ~ 30분 전까지 일함, 답 기다리는 사람은 대표실)
+  const now = Date.now(), out = [];
+  for (const f of SNAP ? SNAP.floors : []) for (const s of f.sessions) {
+    if (s.active || s.waiting || ['running','thinking','error'].includes(s.state?.lastStatus) || now - s.mtime > 30 * 60e3) continue;
+    out.push({ f, s });
+  }
+  return out.slice(0, ROOF_SPOTS.length);
+}
+function syncRoof() {
+  const list = roofResting(), keep = new Set(list.map(x => x.s.key));
+  for (const [k, a] of roofQ) if (!keep.has(k) && !a.leaving) {
+    a.leaving = true; a.say('', '', '다시 일하러 가볼까!', 1500);
+    a.walk([RF.out, RF.door]).then(() => { a.remove(); roofQ.delete(k); roofActors.splice(roofActors.indexOf(a), 1); });
+  }
+  const used = new Set([...roofQ.values()].map(a => a.spot));
+  list.forEach(({ f, s }) => {
+    if (roofQ.has(s.key)) return;
+    const spot = ROOF_SPOTS.findIndex((_, i) => !used.has(i)); if (spot < 0) return; used.add(spot);
+    const kind = s.agent === 'codex' ? 'codex' : 'claude', a = new Actor(kind, ...RF.door); a.scene = 'roof'; a.spot = spot; a.badge = 'coffee';
+    a.setName(staff(kind, f.proj), fno(f.n)); roofQ.set(s.key, a); roofActors.push(a);
+    elevTarget = 1; setTimeout(() => { elevTarget = 0; }, 1000);
+    const [x, y] = ROOF_SPOTS[spot];
+    a.walk([RF.out, [x, RF.out[1]], [x, y]]);
+  });
+  if (Math.random() < .3) { const a = [...roofQ.values()][Math.floor(Math.random() * roofQ.size)]; if (a && !a.walking) a.say('', '', ROOF_TALK[Math.floor(Math.random() * ROOF_TALK.length)], 2800); }
+}
+function renderRoofCrew() {
+  const list = roofResting();
+  $('#crew').innerHTML = list.length ? list.map(({ f, s }) => { const k = s.agent === 'codex' ? 'codex' : 'claude'; return `<div class="cr ${k}" data-goto="${esc(s.key)}" style="cursor:pointer"><img src="${avatar(k)}" alt=""><div class="m"><div class="r1"><b>${esc(staff(k, f.proj))}</b><span class="st rest">🌿 쉬는 중</span></div>
+      <div class="r2">${fno(f.n)} ${esc(f.name)}</div><div class="r3">${agoTxt(s.mtime)}부터 쉬는 중 · 누르면 그 층으로</div></div></div>`; }).join('')
+    : `<div class="cr"><img src="${avatar('claude')}" alt=""><div class="m"><div class="r1"><b>옥상이 조용해요</b></div><div class="r2">쉬러 올라온 직원이 없어요 🌿</div></div></div>`;
+}
+
+// ───────── 1층 로비 디오라마 ─────────
+// 대리석 바닥 · 건물 이름 간판 · 층별 안내판 · 이달의 직원 액자 · 안내 데스크 · 엘리베이터 2대 · 대기 소파 · 정문
+// 일하는 층 직원들이 정문으로 들어와 엘리베이터를 타고, 일이 없으면 가끔 퇴근함
+const LOBBY_ROOMS = { lobby: { x: 0, y: 0, w: 14, h: 11, name: '로비', tone: '#d38f22' } };
+const LB = { door: [11.6, 10.7], doorIn: [11.6, 9.4], elevOut: [1.5, 4.1], elevIn: [.45, 4.1], hall: [6, 6.6] };
+const lobbyItems = [], lobbyActors = [];
+let lobbyGuide = null, lobbyBarista = null;
+const BARISTA = ['오늘의 원두는 에티오피아예요 ☕', '라떼 아트 연습 중…', '아이스 아메리카노 주문 받아요!', '쿠키 방금 구웠어요 🍪', '야근하시는 분 샷 추가 무료!'];
+const CAFE_SPOT = [5.8, 9.4]; // 카운터 앞 주문 자리
+{
+  const saved = items.splice(0);
+  // 안내 데스크
+  add(5.2, 4.4, 3.4, 1.0, () => {
+    box(5.2, 4.4, 3.4, 1.0, 24, '#fffaf2'); box(5.1, 4.3, 3.6, 1.2, 3, '#c58449', 24);
+    faceY(5.4, 5.6, 8.2, 8, 18, '#d38f22');
+    wallText('안내', 6.9, 5.4, 13, 'y', '10px Jua,sans-serif', '#ffffff');
+    box(7.6, 4.55, .45, .35, 4, '#2f2a4a', 27); // 전화
+  }, .3);
+  monitorBack(5.8, 4.45, 27);
+  // 대기 소파 · 탁자 · 화분
+  sofa(10.9, 2.6, 2.4, '#4a7fe0'); sofa(10.9, 4.9, 2.4, '#4a7fe0'); table(11.2, 3.8, 1.8, .7, '#f7efe6', 12); // 대기 소파 (오른쪽 안쪽)
+  plant(13.3, 6.4, 1.3); plant(9.9, 1.0, 1.1); plant(4.4, 1.0, 1.1); plant(9.4, 10.4); plant(13.3, 9.6, 1.2);
+  // ☕ 카페 (앞쪽 왼편) — 카운터 · 에스프레소 머신 · 컵 · 디저트 진열장 · 테이블 · 입간판
+  add(1.8, 8.2, 3.4, .8, () => {
+    box(1.8, 8.2, 3.4, .8, 24, '#8a5a3c'); box(1.7, 8.1, 3.6, 1.0, 3, '#e9d6b8', 24);
+    faceY(9.0, 1.9, 5.1, 6, 20, '#a8714c'); wallText('CAFE', 3.5, 9.0, 13, 'y', '10px Jua,sans-serif', '#fff3c4');
+    box(2.0, 8.25, .7, .55, 16, '#3a3a44', 27); box(2.1, 8.75, .5, .06, 4, '#c0c4cf', 33); box(2.15, 8.3, .4, .1, 3, '#ff6b5b', 41); // 에스프레소 머신
+    for (let i = 0; i < 3; i++) box(3.0 + i * .3, 8.4, .18, .18, 5, ['#ffffff', '#f3e4cf', '#ffffff'][i], 27); // 컵
+    box(4.1, 8.25, 1.0, .6, 12, 'rgba(200,230,255,.55)', 27); // 디저트 진열장
+    for (let i = 0; i < 3; i++) box(4.2 + i * .3, 8.4, .2, .2, 4, ['#f2b8c8', '#ffd34d', '#8a5a3c'][i], 28);
+  }, .3);
+  for (const [tx, ty] of [[6.6, 9.9], [8.0, 8.7]]) { table(tx, ty, .9, .7, '#fffaf2', 18); chair(tx - .55, ty + .1, '#c58449', false); chair(tx + .95, ty + .1, '#c58449', false); }
+  add(1.0, 9.6, .5, .3, () => { // 입간판 (메뉴 · OPEN)
+    box(1.0, 9.6, .5, .3, 30, '#3a2f28'); wallText('OPEN', 1.25, 9.9, 24, 'y', '7px Jua,sans-serif', Math.sin(performance.now() / 400) > -.4 ? '#8fe3ab' : '#4a6a55');
+    wallText('☕ 4,500', 1.25, 9.9, 14, 'y', '6px Jua,sans-serif', '#fff3c4');
+  });
+  // 정문 유리문 (앞쪽)
+  for (const x of [10.2, 12.9]) add(x, 10.75, .14, .2, () => box(x, 10.75, .14, .2, 34, '#b8bdcc'));
+  add(10.3, 10.8, 2.6, .1, () => { box(10.34, 10.8, 1.25, .06, 30, 'rgba(170,215,255,.28)'); box(11.61, 10.8, 1.25, .06, 30, 'rgba(170,215,255,.28)'); box(10.2, 10.75, 2.84, .2, 4, '#b8bdcc', 30); }, .5); // 낮은 유리 자동문
+  tree(15.2, 2.5, 1.0); tree(-1.0, 12.0, .9); bush(14.6, 8.0); bush(6.0, 11.6); bush(2.5, 11.6);
+  lobbyItems.push(...items.splice(0)); items.push(...saved);
+}
+function drawLobbyRoom(t) {
+  const { w: W, h: H } = LOBBY;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) faceZ(x, y, x + 1, y + 1, 0, (x + y) % 2 ? '#f4f1ec' : '#e6e1d8'); // 대리석
+  faceZ(10.4, 7.0, 12.8, 11.0, .4, '#c58449'); faceZ(10.6, 7.2, 12.6, 10.8, .5, '#d9a066'); // 정문 카펫
+  faceZ(1.4, 5.8, 10.6, 7.4, .45, '#d9a066'); // 엘리베이터까지 길
+  faceZ(10.3, 10.2, 12.9, 11.0, .6, '#4a4f63'); // 발판
+  for (let y = 7.6; y < 11; y += .5) faceZ(.6, y, 9.0, y + .5, .5, (y * 2) % 2 ? '#d9b48a' : '#cfa77c'); // 카페 원목 바닥
+  const e = EDGE; EDGE = 'rgba(55,45,70,.22)';
+  box(-.3, -.3, W + .3, .3, WALL, '#f7f4ef'); box(-.3, 0, .3, H, WALL, '#f7f4ef');
+  EDGE = e;
+  faceY(0, 0, W, 0, WALL, '#f5ecdc'); faceX(0, 0, H, 0, WALL, '#f5ecdc');
+  for (let x = .5; x < W; x += 1) faceY(0, x, x + .06, 0, WALL, 'rgba(197,132,73,.12)');
+  // 건물 이름 간판
+  faceY(0, 4.2, 9.6, 46, 76, '#2f2a4a'); faceY(0, 4.3, 9.5, 48, 74, '#3d3766');
+  wallText(TITLE, 6.9, 0, 61, 'y', '13px Jua,sans-serif', '#ffd34d');
+  // 이달의 직원 액자
+  faceY(0, 1.0, 3.2, 34, 72, '#c58449'); faceY(0, 1.1, 3.1, 36, 70, '#fff3c4');
+  const top = typeof monthRank === 'function' ? monthRank()[0] : null;
+  wallText('🏆 이달의 직원', 2.1, 0, 65, 'y', '8px Jua,sans-serif', '#a86c12');
+  if (top) {
+    const img = avatarImg(top.kind), [ix, iy] = P(2.1, 0, 52);
+    if (img.complete) { ctx.save(); ctx.translate(ix, iy); ctx.transform(1, TH / TW, 0, 1, 0, 0); ctx.drawImage(img, -11, -11, 22, 22); ctx.restore(); }
+    wallText(staff(top.kind, top.f.proj), 2.1, 0, 40, 'y', '9px Jua,sans-serif', '#4a2a00');
+  }
+  // 층별 안내판
+  faceY(0, 10.0, 13.6, 24, 78, '#3a2f28'); faceY(0, 10.1, 13.5, 26, 76, '#4a3d33');
+  const fl = SNAP ? SNAP.floors.filter(f => f.n > 0).reverse().slice(0, 8) : [];
+  fl.forEach((f, i) => {
+    const z = 70 - i * 5.6;
+    wallText(`${fno(f.n)} ${String(f.name).slice(0, 12)}`, 10.3, 0, z, 'y', '7px Jua,sans-serif', f.active ? '#8fe3ab' : '#e8d4b0', 'left');
+    if (f.active) { const [dx, dy] = P(13.3, 0, z + 1.5); circle(dx, dy, 1.6, '#8fe3ab'); }
+  });
+  // 엘리베이터 2대 (왼쪽 벽)
+  for (const [y0, open] of [[3.05, elevOpen], [6.55, 0]]) {
+    faceX(.01, y0, y0 + 2.1, 0, 66, '#8f95aa');
+    const half = .9 * open, mid = y0 + 1.05;
+    faceX(.02, y0 + .1, y0 + 2.0, 0, 62, '#3a3f52');
+    faceX(.03, y0 + .1, mid - half, 0, 62, '#cfd4e2'); faceX(.03, mid + half, y0 + 2.0, 0, 62, '#cfd4e2');
+    faceX(.02, y0 + .55, y0 + 1.55, 70, 80, '#1d1f2b');
+    wallText(y0 < 5 ? '▲▼' : '1F', .02, mid, 75, 'x', '10px Jua,sans-serif', '#ffb347');
+  }
+  faceY(0, 0, W, 0, 5, '#ddd3c6'); faceX(0, 0, H, 0, 5, '#ddd3c6');
+}
+const AVIMG = {};
+function avatarImg(kind) { if (!AVIMG[kind]) { AVIMG[kind] = new Image(); AVIMG[kind].src = avatar(kind); } return AVIMG[kind]; }
+const wasActive = new Map(); // 층 → 지난번에 일하던 중이었나
+function lobbyTick() { // 층이 일을 시작하면 출근(정문 → 엘리베이터), 일을 멈추면 퇴근(엘리베이터 → 정문). 그 외엔 안 움직임
+  if (!SNAP) return;
+  const changes = [];
+  for (const f of SNAP.floors) {
+    if (f.n <= 0) continue;
+    const was = wasActive.get(f.proj); wasActive.set(f.proj, f.active);
+    if (was !== undefined && was !== f.active) changes.push({ f, goIn: f.active });
+  }
+  if (view !== 'lobby') return;
+  if (!lobbyGuide) {
+    lobbyGuide = new Actor('guide', 6.9, 3.7); lobbyGuide.scene = 'lobby'; lobbyGuide.setName('안내원', '로비'); lobbyActors.push(lobbyGuide);
+    lobbyBarista = new Actor('barista', 3.3, 7.75); lobbyBarista.scene = 'lobby'; lobbyBarista.setName('바리스타', '카페'); lobbyActors.push(lobbyBarista);
+  }
+  if (Math.random() < .12) lobbyBarista.say('', '', BARISTA[Math.floor(Math.random() * BARISTA.length)], 3000); // 가끔 혼잣말
+  for (const c of changes.slice(0, 3)) lobbyWalk(c.f, c.goIn);
+}
+function lobbyWalk(f, goIn) {
+  const s = f.sessions[0], kind = s.agent === 'codex' ? 'codex' : 'claude';
+  const a = new Actor(kind, ...(goIn ? LB.door : LB.elevIn)); a.scene = 'lobby'; a.setName(staff(kind, f.proj), fno(f.n)); lobbyActors.push(a);
+  const done = () => { a.remove(); lobbyActors.splice(lobbyActors.indexOf(a), 1); };
+  if (goIn && Math.random() < .5) { // 절반은 카페에 들러 커피를 사 감
+    a.walk([LB.doorIn, [CAFE_SPOT[0], LB.doorIn[1]], CAFE_SPOT]).then(() => { a.say('', '', '아메리카노 한 잔이요!', 1800); return sleep(1600); })
+      .then(() => { lobbyBarista.say('', '', '나왔습니다 ☕ 좋은 하루 되세요!', 2000); a.badge = 'coffee'; return sleep(1200); })
+      .then(() => a.walk([[CAFE_SPOT[0], LB.hall[1]], [LB.elevOut[0], LB.hall[1]], LB.elevOut]))
+      .then(() => { elevTarget = 1; return sleep(500); }).then(() => a.walk([LB.elevIn])).then(() => { elevTarget = 0; done(); });
+  } else if (goIn) {
+    a.walk([LB.doorIn, [LB.doorIn[0], LB.hall[1]], LB.hall]).then(() => { lobbyGuide.say('', '', '어서 오세요! ' + fno(f.n) + '로 가세요 🙂', 2500); return a.walk([[LB.elevOut[0], LB.hall[1]], LB.elevOut]); })
+      .then(() => { elevTarget = 1; return sleep(500); }).then(() => a.walk([LB.elevIn])).then(() => { elevTarget = 0; done(); });
+  } else {
+    elevTarget = 1; a.say('', '', '오늘도 수고했어요 👋', 2500);
+    sleep(400).then(() => a.walk([LB.elevOut, [LB.elevOut[0], LB.hall[1]], [LB.doorIn[0], LB.hall[1]], LB.doorIn, LB.door])).then(() => { elevTarget = 0; done(); });
+  }
+}
+setInterval(lobbyTick, 5000);
+function renderLobbyCrew() {
+  const t = monthRank()[0], D = dayData();
+  const card = (tab, img, title, sub) => `<div class="cr" data-ltab="${tab}" style="cursor:pointer"><img src="${img}" alt=""><div class="m"><div class="r1"><b>${title}</b></div><div class="r2">${sub}</div><div class="r3">누르면 안내판</div></div></div>`;
+  $('#crew').innerHTML = card('dir', avatar('guide'), '🗂 층 안내', `${SNAP.floors.filter(f => f.active).length}개 층 일하는 중`)
+    + card('work', avatar('claude'), '⏰ 출퇴근', `오늘 ${D.length}개 층 출근`)
+    + card('star', avatar(t ? t.kind : 'claude'), '🏆 이달의 직원', t ? esc(staff(t.kind, t.f.proj)) : '아직 없음')
+    + card('day', avatar('me'), '📋 오늘 요약', `근무 ${dur(D.reduce((a, x) => a + x.mins, 0))}`);
+}
+
+// ───────── 밤 모드 ─────────
+// 자동: 저녁 7시 ~ 아침 6시는 밤. 오른쪽 버튼으로 자동 → 밤 → 낮 순서로 바꿈 (이 브라우저에 기억)
+let nightMode = (() => { try { return localStorage.getItem('codexOffice.night') || 'auto'; } catch { return 'auto'; } })();
+const isNight = () => nightMode === 'night' || (nightMode === 'auto' && (h => h >= 19 || h < 6)(new Date().getHours()));
+function drawNight(t, rooms = ROOMS) {
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = 'rgba(18,22,70,.38)'; ctx.fillRect(0, 0, cv.width, cv.height); // 어둑하게
+  ctx.restore();
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (const [id, r] of Object.entries(rooms)) { // 방마다 천장 불빛 — 사람이 있는 방은 더 밝게
+    const [x, y] = P(r.x + r.w / 2, r.y + r.h / 2, 30), k = busy.has(id) ? .3 + Math.sin(t * 2 + r.x) * .02 : .14;
+    const g = ctx.createRadialGradient(x, y, 4, x, y, 150);
+    g.addColorStop(0, `rgba(255,205,130,${k})`); g.addColorStop(1, 'rgba(255,205,130,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x, y, 170, 95, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+function applyNight() {
+  center.classList.toggle('night', isNight());
+  const b = $('#nightBtn'); b.textContent = isNight() ? '🌙' : '☀️';
+  b.title = nightMode === 'auto' ? '밤 모드: 자동 (저녁 7시~아침 6시) — 누르면 항상 밤' : nightMode === 'night' ? '밤 모드: 항상 밤 — 누르면 항상 낮' : '밤 모드: 항상 낮 — 누르면 자동';
+  b.style.outline = nightMode === 'auto' ? '' : '2px solid #ffb347';
+}
+$('#nightBtn').onclick = () => {
+  nightMode = { auto: 'night', night: 'day', day: 'auto' }[nightMode];
+  try { localStorage.setItem('codexOffice.night', nightMode); } catch { }
+  applyNight();
+};
+applyNight(); setInterval(applyNight, 60e3);
+// 가리기 모드 (캡처용) — 이 브라우저에 기억
+const setPriv = (v) => { document.body.classList.toggle('priv', v); $('#privBtn').classList.toggle('on', v); $('#privBtn').textContent = v ? '🙈' : '👀'; try { localStorage.setItem('codexOffice.priv', v ? '1' : ''); } catch { } };
+$('#privBtn').onclick = () => setPriv(!document.body.classList.contains('priv'));
+setPriv((() => { try { return !!localStorage.getItem('codexOffice.priv'); } catch { return false; } })());
+requestAnimationFrame(frame);
+
+const live = $('#live');
+function connect() {
+  const es = new EventSource('/events');
+  es.addEventListener('snap', (m) => { RAW = JSON.parse(m.data); applySnap(); renderUsage(RAW.usage);
+    if (RAW.building && RAW.building !== TITLE) { TITLE = RAW.building; if (!alertT) document.title = TITLE; $('#bname').textContent = TITLE; } live.classList.add('ok'); live.querySelector('span').textContent = 'LIVE'; onSnap(); live.title = `기록 읽기 전용 · ${RAW.diagnostics?.files || 0}개 파일 · 건너뛴 줄 ${RAW.diagnostics?.malformedLines || 0}개`;
+    if (RAW.setup && RAW.setup.need && !setupShown) { setupShown = true; openSetup(true); } });
+  es.addEventListener('ev', (m) => onEv(JSON.parse(m.data)));
+  es.onerror = () => { live.classList.remove('ok'); live.querySelector('span').textContent = '연결 끊김'; };
+}
+connect();
+</script>
+</body>
+</html>
