@@ -1,5 +1,8 @@
 data/
 *.zip
+!docs/CodexOffice.app.zip
+build/
+*.app/
 node_modules/
 .DS_Store
 .env

@@ -1,9 +1,9 @@
 {
   "name": "codex-office",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Read-only local Claude Code and Codex session visualizer, based on TOPLAIN SOFT claude-office",
   "license": "MIT",
   "engines": { "node": ">=18" },
-  "scripts": { "start": "node server.js", "demo": "node demo.js", "test": "node --test test/*.test.js" }
+  "scripts": { "start": "node server.js", "demo": "node demo.js", "test": "node --test test/*.test.js", "build:mac": "node desktop/build.js", "verify:mac": "node desktop/verify-package.js" }
 }

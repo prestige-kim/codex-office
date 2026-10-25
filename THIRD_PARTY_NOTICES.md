@@ -16,3 +16,7 @@ The modified version preserves the office presentation while adding separate Cla
 The screenshot in `docs/preview.png` shows the modified application using synthetic demo data; its office artwork is derived from the original project.
 
 Original files were retrieved from the base revision's `main` state on 2026-10-25. Modifications were made on 2026-10-25. This modified distribution is provided under the MIT License, with the original notices retained.
+
+## Native macOS wrapper
+
+The Swift AppKit/WKWebView wrapper, process-lifecycle host, native icon drawing code and packaging scripts were added for this modified distribution. Its bundled office scene remains derived from the original project described above. The app bundle includes the original MIT license and notices under `Contents/Resources/office/`. The archive does not bundle Node.js or third-party npm dependencies; it uses the user's separately installed Node.js runtime and macOS system frameworks.

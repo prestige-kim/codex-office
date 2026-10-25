@@ -19,7 +19,17 @@ TOPLAIN SOFT의 [claude-office](https://github.com/toplainsoft/claude-office), c
 
 매일 실행하는 순서와 양쪽 도구를 함께 사용하는 방법은 **[사용 가이드](USAGE.md)** 에 정리했습니다.
 
-## 실행
+## Mac 앱으로 실행
+
+**[CodexOffice.app.zip 다운로드](docs/CodexOffice.app.zip)** → 압축 해제 → 응용 프로그램 폴더에 옮기기 → 앱 더블클릭.
+
+앱이 서버와 전용 창을 함께 열고, 창을 닫으면 서버도 종료합니다. Node.js 18 이상은 설치되어 있어야 하며 터미널·별도 브라우저는 필요 없습니다. macOS 13 이상, Apple Silicon/Intel Universal 빌드입니다.
+
+[앱 설치·종료·업데이트와 빌드 안내](docs/MAC_APP.md)
+
+![macOS 전용 오피스 앱](docs/mac-app-preview.png)
+
+## 터미널에서 실행
 
 Node.js **18 이상**이 필요합니다. 추가 패키지 설치, API 키, 모델 설정은 필요 없습니다.
 

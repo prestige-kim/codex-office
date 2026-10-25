@@ -70,7 +70,12 @@ function start(options = {}) {
     console.log(`🏢 코덱스 오피스 · Claude + Codex http://localhost:${server.address().port}\nCodex 기록 읽기 전용: ${root}\nClaude 기록 읽기 전용: ${claudeRoot}\n추가 모델 호출 없음 · 종료: Ctrl+C`);
     options.onReady?.(server);
   });
-  return { server, monitor, snapshot, close: () => { clients.forEach(c => c.end()); server.close(); } };
+  let closed = false;
+  return { server, monitor, snapshot, close: () => {
+    if (closed) return;
+    closed = true; timers.forEach(clearInterval);
+    clients.forEach(c => c.end()); server.close();
+  } };
 }
 if (require.main === module) {
   let app; try { app = start(); } catch (e) { console.error(e.message); process.exitCode = 1; }
