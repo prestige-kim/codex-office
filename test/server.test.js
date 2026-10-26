@@ -16,6 +16,7 @@ test('HTTP/SSE stays local, settings only write office data, read-only snapshots
   assert.equal(app.server.address().address, '127.0.0.1');
   const page = await request(port, '/'); assert.equal(page.status, 200); assert.ok(!page.data.includes('https://fonts.googleapis.com')); assert.match(page.headers['content-security-policy'], /connect-src 'self'/);
   const snap = JSON.parse((await request(port, '/snapshot')).data); assert.equal(snap.floors[0].sessions[0].status, 'completed');
+  assert.equal(snap.user, '대표');
   assert.equal(snap.floors[0].sessions.length, 2); assert.deepEqual(new Set(snap.floors[0].sessions.map(s => s.key)), new Set(['codex/test','claude/test']));
   const bad = await request(port, '/setup', { method: 'POST', headers: { 'Content-Type': 'application/json', Origin: 'https://evil.example' }, body: '{"building":"x","user":"y"}' }); assert.equal(bad.status, 403);
   const host = await request(port, '/snapshot', { headers: { Host: 'evil.example' } }); assert.equal(host.status, 403);
@@ -23,6 +24,17 @@ test('HTTP/SSE stays local, settings only write office data, read-only snapshots
   assert.equal(JSON.parse(setup.data).ok, true); assert.deepEqual(JSON.parse(fs.readFileSync(path.join(dir, 'office-data', 'office.json'))), { building: '내 오피스', user: '대표' });
   await new Promise((resolve, reject) => { const req = http.get(`http://127.0.0.1:${port}/events`, res => { res.once('data', b => { try { assert.match(b.toString(), /event: snap/); resolve(); } catch (e) { reject(e); } req.destroy(); }); }); req.on('error', e => { if (e.code !== 'ECONNRESET') reject(e); }); });
   assert.equal(hash(), before);
+});
+test('the old owner alias is shown as 대표 without altering saved settings; custom names remain usable', async t => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'office-owner-')), dataDir = path.join(dir, 'office'); fs.mkdirSync(dataDir);
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const file = path.join(dataDir, 'office.json'), saved = JSON.stringify({ building: '기존 건물', user: '나' }); fs.writeFileSync(file, saved);
+  let app; const port = await new Promise(resolve => { app = start({ root: path.join(dir, 'codex'), claudeRoot: path.join(dir, 'claude'), dataDir, port: 0, onReady: s => resolve(s.address().port) }); });
+  t.after(() => app.close());
+  assert.equal(JSON.parse((await request(port, '/snapshot')).data).user, '대표'); assert.equal(fs.readFileSync(file, 'utf8'), saved);
+  const save = user => request(port, '/setup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ building: '기존 건물', user }) });
+  await save('지민'); assert.equal(JSON.parse((await request(port, '/snapshot')).data).user, '지민');
+  await save('나'); assert.equal(JSON.parse(fs.readFileSync(file)).user, '대표');
 });
 test('configuration cannot be placed in the source tree', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'codex-office-path-'));

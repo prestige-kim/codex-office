@@ -94,7 +94,23 @@ final class OfficeApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
             throw messageError("Node.js 18 이상이 필요합니다. 설치 후 앱을 다시 열거나, 앱 설정 폴더의 launcher.json에 nodePath를 지정해 주세요.")
         }
         guard let resources = Bundle.main.resourceURL else { throw messageError("앱 리소스를 찾을 수 없습니다.") }
-        let office = resources.appendingPathComponent("office", isDirectory: true)
+        var office = resources.appendingPathComponent("office", isDirectory: true)
+        // A configured checkout is read on every launch. Never silently run the bundled
+        // copy when that checkout is unavailable: users must know which code is running.
+        if let source = settings["officeSourceDir"] {
+            guard source.hasPrefix("/") else { throw messageError("officeSourceDir에는 프로젝트의 절대 경로를 지정해 주세요.") }
+            office = URL(fileURLWithPath: source, isDirectory: true).standardizedFileURL.resolvingSymlinksInPath()
+            for name in ["server.js", "office.html", "lib/combined.js", "desktop/server-host.js", "package.json"] {
+                guard FileManager.default.isReadableFile(atPath: office.appendingPathComponent(name).path) else {
+                    throw messageError("연결한 프로젝트에서 \(name)을 읽을 수 없습니다. launcher.json의 officeSourceDir을 확인해 주세요.\n\(office.path)")
+                }
+            }
+            guard let data = try? Data(contentsOf: office.appendingPathComponent("package.json")),
+                  let package = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  package["name"] as? String == "codex-office" else {
+                throw messageError("officeSourceDir이 Codex Office 프로젝트가 아닙니다.")
+            }
+        }
         let script = office.appendingPathComponent("desktop/server-host.js")
         guard FileManager.default.fileExists(atPath: script.path) else { throw messageError("앱 파일이 빠져 있습니다. 앱 ZIP을 다시 압축 해제해 주세요.") }
         var environment = env
@@ -211,7 +227,8 @@ final class OfficeApp: NSObject, NSApplicationDelegate, WKNavigationDelegate, WK
 
     func writeState(_ url: URL) {
         guard let profile = profile, let child = child else { return }
-        let state: [String: Any] = ["appPid": getpid(), "serverPid": child.processIdentifier, "url": url.absoluteString]
+        let state: [String: Any] = ["appPid": getpid(), "serverPid": child.processIdentifier, "url": url.absoluteString,
+                                    "sourceDir": child.currentDirectoryURL?.path ?? ""]
         if let data = try? JSONSerialization.data(withJSONObject: state, options: [.sortedKeys]) { try? data.write(to: profile.appendingPathComponent("server-state.json"), options: .atomic) }
     }
     func removeState() {

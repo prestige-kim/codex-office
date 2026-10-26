@@ -16,8 +16,10 @@ function start(options = {}) {
   const real = p => { if (fs.existsSync(p)) return fs.realpathSync(p); const parent = path.dirname(p); return parent === p ? p : path.join(real(parent), path.basename(p)); };
   if ([codexHome, root, claudeHome, claudeRoot].some(p => inside(real(p), real(dataDir)))) throw new Error('OFFICE_DATA_DIR must be outside the Codex/Claude homes and transcript directories');
   const confFile = path.join(dataDir, 'office.json'), clients = new Set();
-  let config = { building: '코덱스 오피스', user: '나' };
+  let config = { building: '코덱스 오피스', user: '대표' };
   try { config = { ...config, ...JSON.parse(fs.readFileSync(confFile, 'utf8')) }; } catch {}
+  const ownerName = name => typeof name === 'string' && name.trim() && name.trim() !== '나' ? name.trim() : '대표';
+  config.user = ownerName(config.user);
   const broadcast = (event, value) => { const msg = `event: ${event}\ndata: ${JSON.stringify(value)}\n\n`; for (const client of clients) if (client.writableLength < 1024 * 1024) client.write(msg); else client.destroy(); };
   const monitor = new CombinedMonitor({ codexRoot: root, claudeRoot, codexEnabled: options.codexEnabled ?? !process.env.NO_CODEX, claudeEnabled: options.claudeEnabled ?? !process.env.NO_CLAUDE, onEvent: (S, e) => {
     if (S.parent) return; // Child animation is synchronized from the authoritative snapshot.
@@ -48,11 +50,11 @@ function start(options = {}) {
         try {
           const d = JSON.parse(body), clean = v => typeof v === 'string' ? v.replace(/[\u0000-\u001f]/g, '').trim().slice(0, 40) : '';
           const building = clean(d.building), user = clean(d.user);
-          if (!building || !user) throw new Error('건물 이름과 내 이름을 입력해 주세요');
+          if (!building || !user) throw new Error('건물 이름과 대표 이름을 입력해 주세요');
           fs.mkdirSync(dataDir, { recursive: true });
           // Only this application's configuration is written. No Codex settings are touched.
           if (fs.existsSync(confFile) && fs.lstatSync(confFile).isSymbolicLink()) throw new Error('설정 파일 심볼릭 링크는 지원하지 않습니다');
-          config = { building, user }; const temp = confFile + '.' + process.pid + '.tmp';
+          config = { building, user: ownerName(user) }; const temp = confFile + '.' + process.pid + '.tmp';
           fs.writeFileSync(temp, JSON.stringify(config, null, 2) + '\n', { flag: 'wx', mode: 0o600 }); fs.renameSync(temp, confFile); result = { ok: true };
         } catch (e) { result = { ok: false, msg: e.message }; }
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(result)); if (result.ok) broadcast('snap', snapshot());

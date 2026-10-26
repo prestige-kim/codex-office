@@ -346,7 +346,7 @@ body.priv :is(.fl:not(.rf):not(.lobby) b,#tname,#mproj,#msess,.al b,.al p,.bub,.
       <div id="live"><i></i><span>LIVE</span></div>
     </div>
     <div id="pop" role="menu"></div>
-    <div id="tools"><button id="zin" aria-label="확대">＋</button><button id="zout" aria-label="축소">－</button><button id="zfit" aria-label="전체 보기">⤢</button><button id="nightBtn" aria-label="밤 모드"></button><button id="setupBtn" aria-label="설정" title="설정: 건물 이름 · 내 이름 · 사용량 표시">⚙️</button><button id="privBtn" aria-label="가리기" title="가리기: 이름·작업 내용을 흐리게 (캡처할 때)">🙈</button></div>
+    <div id="tools"><button id="zin" aria-label="확대">＋</button><button id="zout" aria-label="축소">－</button><button id="zfit" aria-label="전체 보기">⤢</button><button id="nightBtn" aria-label="밤 모드"></button><button id="setupBtn" aria-label="설정" title="설정: 건물 이름 · 대표 이름 · 사용량 표시">⚙️</button><button id="privBtn" aria-label="가리기" title="가리기: 이름·작업 내용을 흐리게 (캡처할 때)">🙈</button></div>
     <div id="crew"></div>
     <div id="empty"></div>
     <div id="lobbyV"><div id="board" role="dialog" aria-label="로비 안내판"></div></div>
@@ -392,13 +392,16 @@ const PEOPLE = {
   codex: { body: '#2e3646', hair: '#2a211c', label: 'Codex', dot: '#14a085', headset: '#14a085', mark: '◇' },
   Guardian: { body: '#d9a930', hair: '#4a3426', cap: '#2e3646', label: '검토 요원', dot: '#d9a930' },
   Helper: { body: '#5fc4ae', hair: '#5a3a26', label: 'Codex 도우미', dot: '#5fc4ae' },
-  me: { body: '#e86a8a', hair: '#3b2418', dot: '#d38f22', long: true, lady: true, pin: '#ffd34d', skirt: '#2f2a4a' }, // 대표: 긴 머리 · 핑크 재킷 · 머리핀
+  me: { body: '#355a78', hair: '#28252d', dot: '#d6a448', glasses: 'rect', suit: true, tie: '#e6b857' }, // 대표: 짧은 머리 · 사각 안경 · 네이비 정장
   barista: { body: '#6b4a33', hair: '#2a1d17', dot: '#c58449', apron: '#f3e4cf', cap: '#3a2a20' }, // 로비 카페 바리스타
   guide: { body: '#2b9672', hair: '#2a1d17', dot: '#2b9672', long: true, lady: true, pin: '#ffffff' }, // 로비 안내원
   other: { body: '#7d8899', hair: '#3a3128', dot: '#7d8899' },
 };
 const pkey = (t) => PEOPLE[t] ? t : 'other';
 const plabel = (t) => (PEOPLE[t] && PEOPLE[t].label) || t;
+const ownerName = () => SNAP?.user && SNAP.user !== '나' ? SNAP.user : '대표';
+const ownerRoom = () => ownerName() === '대표' ? '대표실' : `${ownerName()} 대표실`;
+const nameOwner = a => a.setName(ownerName(), ownerName() === '대표' ? '' : '대표');
 
 // ───────── 캔버스 · 카메라 ─────────
 const cv = $('#cv'), center = $('#center'), ov = $('#ov');
@@ -732,6 +735,14 @@ function drawPerson(a, t) {
   rrect(-11.5, by + 3 + sw * .6, 4.5, 11, 2.2, shade(L.body, -.12), OUT);
   rrect(7, by + 3 - sw * .6, 4.5, 11, 2.2, shade(L.body, -.12), OUT);
   rrect(-8.5, by, 17, 18, 7.5, L.body, OUT);
+  if (L.suit) {
+    // Same small canvas silhouette as the staff; light collar and gold tie stay legible in the office.
+    ctx.beginPath(); ctx.moveTo(-4.5, by + 1); ctx.lineTo(4.5, by + 1); ctx.lineTo(0, by + 13); ctx.closePath(); ctx.fillStyle = '#f8f5e9'; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-5.7, by + 1); ctx.lineTo(-2, by + 5); ctx.lineTo(-4, by + 8); ctx.lineTo(0, by + 13); ctx.lineTo(-6.5, by + 6); ctx.closePath(); ctx.fillStyle = shade(L.body, .22); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(5.7, by + 1); ctx.lineTo(2, by + 5); ctx.lineTo(4, by + 8); ctx.lineTo(0, by + 13); ctx.lineTo(6.5, by + 6); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(0, by + 3); ctx.lineTo(1.5, by + 5); ctx.lineTo(1.1, by + 10); ctx.lineTo(0, by + 11.5); ctx.lineTo(-1.1, by + 10); ctx.lineTo(-1.5, by + 5); ctx.closePath(); ctx.fillStyle = L.tie; ctx.fill();
+    rrect(4.4, by + 7, 2.7, 1.2, .4, '#f8f5e9');
+  }
   if (L.apron) { rrect(-6, by + 5, 12, 13, 3, L.apron, OUT); rrect(-2.5, by + 9, 5, 3, 1, shade(L.apron, -.15)); } // 앞치마
   if (L.mark) { ctx.fillStyle = '#fff'; ctx.font = '700 8px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(L.mark, 0, by + 11); }
   const hy = by - 11;
@@ -741,6 +752,7 @@ function drawPerson(a, t) {
   circle(0, hy, 12.5, '#ffd9ba', OUT);
   ctx.beginPath(); ctx.arc(0, hy - 1, 13, Math.PI * 1.03, Math.PI * 1.97); ctx.quadraticCurveTo(4, hy - 6, -2, hy - 5); ctx.quadraticCurveTo(-8, hy - 5, -12.8, hy - 2); ctx.closePath(); ctx.fillStyle = L.hair; ctx.fill();
   rrect(-13, hy - 5, 4, 8, 2, L.hair); rrect(9, hy - 5, 4, 8, 2, L.hair);
+  if (L.suit) { ctx.strokeStyle = shade(L.hair, .22); ctx.lineWidth = 1.3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(5, hy - 12); ctx.quadraticCurveTo(1, hy - 10, -7, hy - 8); ctx.stroke(); }
   if (L.pin) { rrect(5, hy - 11, 7, 3, 1.5, L.pin, OUT); circle(11, hy - 9.5, 2, '#ff8fa8', OUT); }
   if (L.ahoge) { ctx.strokeStyle = L.hair; ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(0, hy - 13); ctx.quadraticCurveTo(5, hy - 20, 1, hy - 23); ctx.stroke(); }
   if (L.headset) { ctx.strokeStyle = '#3a4252'; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(0, hy - 1, 14, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke(); rrect(-16, hy - 3, 5, 9, 2.5, L.headset, OUT); rrect(11, hy - 3, 5, 9, 2.5, L.headset, OUT); ctx.strokeStyle = '#3a4252'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(-13.5, hy + 5); ctx.quadraticCurveTo(-11, hy + 10, -5, hy + 9.5); ctx.stroke(); circle(-5, hy + 9.5, 1.6, '#3a4252'); }
@@ -755,7 +767,12 @@ function drawPerson(a, t) {
   if (a.mood === 'think') { ctx.moveTo(-1.6, hy + 7); ctx.lineTo(1.6, hy + 7); ctx.stroke(); rrect(6, hy + 5, 5.5, 5.5, 2.6, '#ffd9ba', OUT); }
   else if (a.mood === 'sweat') { ctx.arc(0, hy + 8, 2, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke(); }
   else { ctx.arc(0, hy + 5.5, 2.2, .15 * Math.PI, .85 * Math.PI); ctx.stroke(); }
-  if (L.glasses) { ctx.strokeStyle = '#2b2232'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.arc(-4.4, hy + 2.2, 3.7, 0, 7); ctx.moveTo(8.1, hy + 2.2); ctx.arc(4.4, hy + 2.2, 3.7, 0, 7); ctx.moveTo(-.7, hy + 2.2); ctx.lineTo(.7, hy + 2.2); ctx.stroke(); }
+  if (L.glasses === 'rect') {
+    ctx.strokeStyle = '#24303d'; ctx.lineWidth = 1.5; ctx.beginPath();
+    ctx.roundRect(-9.3, hy - 1.1, 8.2, 6.4, 1.7); ctx.roundRect(1.1, hy - 1.1, 8.2, 6.4, 1.7);
+    ctx.moveTo(-1.1, hy + 1.6); ctx.lineTo(1.1, hy + 1.6); ctx.moveTo(-11.6, hy + .1); ctx.lineTo(-9.3, hy + 1.2); ctx.moveTo(9.3, hy + 1.2); ctx.lineTo(11.6, hy + .1); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = .8; ctx.beginPath(); ctx.moveTo(-7.8, hy); ctx.lineTo(-5.7, hy); ctx.moveTo(2.6, hy); ctx.lineTo(4.7, hy); ctx.stroke();
+  } else if (L.glasses) { ctx.strokeStyle = '#2b2232'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.arc(-4.4, hy + 2.2, 3.7, 0, 7); ctx.moveTo(8.1, hy + 2.2); ctx.arc(4.4, hy + 2.2, 3.7, 0, 7); ctx.moveTo(-.7, hy + 2.2); ctx.lineTo(.7, hy + 2.2); ctx.stroke(); }
   if (a.mood === 'sweat') { ctx.beginPath(); const dx = 13, dy = hy - 6 + ((t * 20) % 6); ctx.moveTo(dx, dy - 4); ctx.quadraticCurveTo(dx + 3.5, dy + 1, dx, dy + 2.5); ctx.quadraticCurveTo(dx - 3.5, dy + 1, dx, dy - 4); ctx.fillStyle = '#6cb6ff'; ctx.fill(); }
   if (a.badge === 'phone') rrect(-16, by - 1, 6, 10, 2, '#2b2f3a');
   if (a.badge === 'coffee') { rrect(9, by + 5, 7, 7, 1.5, '#ffffff', OUT); rrect(9.5, by + 5.5, 6, 2, 1, '#9a6a45'); }
@@ -1041,7 +1058,7 @@ function onEv(e) {
     case 'think': c.mood = 'think'; c.say('think', '고민 중…', e.text, 8000); break;
     case 'say': c.mood = ''; c.say('', '', e.text, 6000); break;
     case 'error': c.mood = 'sweat'; c.shakeUntil = performance.now() + 900; c.say('error', '실패', e.text, 5000); setTimeout(() => { if (c.mood === 'sweat') c.mood = ''; }, 5000); break;
-    case 'user': c.mood = ''; c.say('user', `${SNAP.user || '대표'}님 지시`, e.text, 6000); c.goto(spotFor('desk', null, W.kind)); break;
+    case 'user': c.mood = ''; c.say('user', '대표님 지시', e.text, 6000); c.goto(spotFor('desk', null, W.kind)); break;
     case 'spawn': spawnAgent(W, e); break;
     case 'agentTool': agentTool(W, e.id, e); break;
     case 'agentErr': { const A = W.agents.get(e.id); if (A) { A.actor.mood = 'sweat'; A.actor.shakeUntil = performance.now() + 900; A.actor.say('error', '실패', e.text, 3500); setTimeout(() => { A.actor.mood = 'work'; }, 3500); } break; }
@@ -1122,7 +1139,7 @@ function logLine(W, e) {
     case 'say': txt = e.text; break;
     case 'error': txt = `⚠ ${e.text}`; break;
     case 'wait': txt = '🛗 대표실에 올라가서 답을 기다려요'; break;
-    case 'user': who = `${SNAP.user || '나'} → ${staff(W.kind)}`; kind = 'me'; txt = e.text; break;
+    case 'user': who = `${ownerName()} → ${staff(W.kind)}`; kind = 'me'; txt = e.text; break;
     case 'spawn': who = e.desc || plabel(e.type); kind = pkey(e.type); txt = `${plabel(e.type)}${e.type === 'Guardian' || e.type === 'Helper' ? '' : ' 에이전트'}가 엘리베이터로 출근`; break;
     case 'agentTool': { const A = ag(e.id); who = A ? (A.info.desc || plabel(A.info.type)) : '도우미'; kind = A ? A.actor.kind : 'other'; txt = `${ROOM_KO[e.room] || ''}에서 ${fmtTool(e.tool, e.detail)}`; break; }
     case 'agentDone': { const A = ag(e.id); who = A ? (A.info.desc || plabel(A.info.type)) : '도우미'; kind = A ? A.actor.kind : 'other'; txt = '보고하고 퇴근'; break; }
@@ -1203,7 +1220,7 @@ function renderDir() {
   const resting = roofResting().length;
   const roofg = `<div class="fl rf ${view === 'roof' ? 'cur' : ''}" data-rf tabindex="0" title="옥상정원 — 쉬는 직원들이 올라와 있어요"><span class="no jua">RF</span><b>옥상정원</b><span class="sub">${resting ? `🌿 ${resting}명 쉬는 중` : '🌿 조용한 정원'}</span></div>`;
   const asks = SNAP.floors.filter(f => floorAlert.get(f.proj) === 'ask').length, errs = SNAP.floors.filter(f => floorAlert.get(f.proj) === 'err').length, waits = waitingList().length;
-  const ceo = `<div class="fl ceo ${asks ? 'ask' : errs ? 'err' : ''} ${view === 'ceo' ? 'cur' : ''}" data-ceo tabindex="0" title="대표실 — 직원들이 올린 질문·에러 모아 보기"><span class="no jua">대표</span><b>${esc(SNAP.user || '')} 대표실</b>
+  const ceo = `<div class="fl ceo ${asks ? 'ask' : errs ? 'err' : ''} ${view === 'ceo' ? 'cur' : ''}" data-ceo tabindex="0" title="대표실 — 직원들이 올린 질문·에러 모아 보기"><span class="no jua">대표</span><b>${esc(ownerRoom())}</b>
     <span class="sub">${asks || errs || waits ? [asks && `🙋 질문 ${asks}`, errs && `⚠ 에러 ${errs}`, waits && `💬 답변 대기 ${waits}`].filter(Boolean).join(' · ') : '결재 대기 없음'}</span></div>`;
   $('#stack').innerHTML = roofg + ceo + SNAP.floors.filter(f => f.n > 0).reverse().map(card).join('') + lobby;
   if (lobbyOpen) renderLobby(); else if (bossOpen) renderBoss();
@@ -1212,7 +1229,7 @@ function renderDir() {
   const ub = $('#unhide'); ub.hidden = !hiddenN; ub.textContent = `숨긴 층 ${hiddenN}개 되돌리기`;
   const f = SNAP.floors.find(x => x.n === curFloorN), s = allSessions().find(x => x.key === curKey);
   $('#tfl').textContent = view === 'ceo' ? '대표' : view === 'lobby' ? '1F' : view === 'roof' ? 'RF' : f ? fno(f.n) : '-';
-  $('#tname').textContent = view === 'ceo' ? `${SNAP.user || ''} 대표실` : view === 'lobby' ? '로비' : view === 'roof' ? '옥상정원' : f ? f.name : TITLE;
+  $('#tname').textContent = view === 'ceo' ? ownerRoom() : view === 'lobby' ? '로비' : view === 'roof' ? '옥상정원' : f ? f.name : TITLE;
   $('#sessBtn').style.display = view !== 'office' ? 'none' : '';
   if (view === 'ceo') syncCeo();
   if (view === 'roof') syncRoof();
@@ -1374,7 +1391,7 @@ function renderBoss() {
     return `<div class="rw" data-n="${f.n}" tabindex="0"><span class="no jua">${fno(f.n)}</span><b>${k === 'ask' ? '🙋' : '⚠'} ${esc(i.who || '')} · ${esc(f.name)}</b>
       <span class="st">${i.at ? agoTxt(i.at) : ''}</span><span class="what"><span>${esc(i.text || (k === 'ask' ? '질문이 있어요' : '에러가 났어요'))}</span></span></div>`;
   }).join('');
-  $('#board').innerHTML = `<header><h3 class="jua">${esc(SNAP.user || '')} 대표실 · 결재함</h3></header>
+  $('#board').innerHTML = `<header><h3 class="jua">${esc(ownerRoom())} · 결재함</h3></header>
     <div class="list">${rows + wrows || '<p style="margin:12px;color:#c9b08a;font-size:13px">올라온 질문이 없어요. 다들 열심히 일하는 중 ☕</p>'}</div>`;
 }
 
@@ -1440,7 +1457,7 @@ $('#tidyBg').addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && e.target.id === 'tName') e.target.nextElementSibling.click();
   if (e.key === 'Enter' && /^t(Claude|Codex)$/.test(e.target.id)) $('#tidy [data-a=staff]').click();
 });
-// ───────── 처음 설정 (건물 이름 · 내 이름 · 사용량 표시) ─────────
+// ───────── 처음 설정 (건물 이름 · 대표 이름 · 사용량 표시) ─────────
 // 서버가 snap.setup.need 로 알려주면 한 번 띄움. 오른쪽 위 ⚙️ 로 언제든 다시 열 수 있음
 let setupShown = false;
 function openSetup(first) {
@@ -1449,7 +1466,7 @@ function openSetup(first) {
   $('#setup').innerHTML = `<h3 class="jua" id="setupH">${first ? '🏢 오피스 개장 준비' : '⚙️ 설정'}</h3>
     <p class="lead">${first ? '반가워요! 두 가지만 정하면 바로 시작해요. 나중에 오른쪽 위 ⚙️ 에서 언제든 바꿀 수 있어요.' : '바꾸면 바로 화면에 반영돼요.'}</p>
     <label class="f">건물 이름<small>지붕 간판과 브라우저 탭에 나와요</small><input type="text" id="suB" maxlength="40" placeholder="예: 우리집 오피스" value="${first ? '' : esc(RAW.building)}"></label>
-    <label class="f">내 이름<small>대표실 이름과 업무 일지에 쓰여요</small><input type="text" id="suU" maxlength="40" placeholder="예: 지민" value="${first ? '' : esc(RAW.user)}"></label>
+    <label class="f">대표 이름<small>대표실 이름과 업무 일지에 쓰여요</small><input type="text" id="suU" maxlength="40" placeholder="대표" value="${first ? '대표' : esc(ownerName())}"></label>
     <div class="found">${ok(su.hasCodex, 'Codex 기록을 찾았어요', 'Codex 기록이 아직 없어요')}<br>${ok(su.hasClaude, 'Claude Code 기록을 찾았어요', 'Claude Code 기록이 아직 없어요')}<br>양쪽 기록 읽기 전용 · 추가 모델 호출 없음 · 상태줄/훅 설치 없음</div>
     <p class="msg" id="suMsg"></p>
     <footer>${first ? '' : '<button type="button" class="btn" id="suX">닫기</button>'}<button type="submit" class="btn pri">${first ? '오피스 열기' : '저장'}</button></footer>`;
@@ -1462,7 +1479,7 @@ $('#setup').addEventListener('submit', async (e) => {
   e.preventDefault();
   const body = { building: $('#suB').value.trim(), user: $('#suU').value.trim() };
   const msg = $('#suMsg');
-  if (!body.building || !body.user) { msg.textContent = '건물 이름과 내 이름을 둘 다 적어 주세요'; return; }
+  if (!body.building || !body.user) { msg.textContent = '건물 이름과 대표 이름을 둘 다 적어 주세요'; return; }
   try {
     const r = await (await fetch('/setup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).json();
     if (!r.ok) { msg.textContent = r.msg || '저장하지 못했어요'; return; }
@@ -1724,7 +1741,7 @@ function dropVisitor() {
 }
 function visit(where) {
   dropVisitor(); if (!SNAP) return;
-  const mk = (x, y) => { const a = new Actor('me', x, y); a.setName(SNAP.user || '대표', '대표'); return a; };
+  const mk = (x, y) => { const a = new Actor('me', x, y); nameOwner(a); return a; };
   elevTarget = 1; setTimeout(() => { elevTarget = 0; }, 1500);
   if (where === 'office' && scene) {
     const a = mk(...SPOTS.elevIn); scene.me = a; visitor = { a, arr: null };
@@ -1744,7 +1761,7 @@ function visit(where) {
 }
 
 // ───────── 대표실 디오라마 ─────────
-// 작은 섬 하나(12×10). 큰 책상 뒤에 대표(나), 답을 기다리는 직원들은 엘리베이터로 올라와 책상 앞에 줄을 섬
+// 작은 섬 하나(12×10). 큰 책상 뒤에 대표, 답을 기다리는 직원들은 엘리베이터로 올라와 책상 앞에 줄을 섬
 const CEO_ROOMS = { ceo: { x: 0, y: 0, w: 12, h: 10, name: '대표실', tone: '#2f2a4a' } };
 const CEO_ELEV = { in: [.45, 5.1], out: [1.6, 5.4] };
 const ceoItems = [], ceoActors = [], ceoQ = new Map(); // ceoQ: 세션 key → Actor
@@ -1818,7 +1835,7 @@ function ceoWaiting() {
 const ceoSlot = (i) => [3.9 + (i % 5) * 1.25, 5.3 + Math.floor(i / 5) * 1.3]; // 책상 앞 줄 (5명씩)
 function syncCeo() {
   if (!ceoMe) { ceoMe = new Actor('me', 6.4, 2.0); ceoMe.scene = 'ceo'; ceoActors.push(ceoMe); }
-  ceoMe.setName(SNAP.user || '나', '대표');
+  nameOwner(ceoMe);
   const list = ceoWaiting(), keep = new Set(list.map(x => x.s.key));
   for (const [k, a] of ceoQ) if (!keep.has(k) && !a.leaving) { // 답 받은 사람은 엘리베이터로 내려감
     a.leaving = true; a.say('report', '감사합니다!', '', 1500);
